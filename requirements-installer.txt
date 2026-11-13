@@ -1,0 +1,2 @@
+# ELF relocation helper; does not participate in model inference.
+patchelf==0.19.3.0

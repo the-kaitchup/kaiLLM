@@ -1,0 +1,6 @@
+# Exact CUDA 13.0 PyTorch wheels; fetched only from the official PyTorch index.
+--index-url https://download.pytorch.org/whl/cu130
+torch==2.14.1+cu130
+torchaudio==2.11.0+cu130
+torchcodec==0.17.0+cu130
+torchvision==0.29.0+cu130

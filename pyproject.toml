@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=78,<81", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kaillm"
+version = "0.1.0rc4"
+description = "Batched GGUF and mixed YAQA/GGUF serving built on vLLM"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.12,<3.13"
+
+[project.urls]
+Source = "https://github.com/the-kaitchup/kaiLLM"
+Issues = "https://github.com/the-kaitchup/kaiLLM/issues"
+
+[project.scripts]
+kaillm = "kaillm.cli:main"
+
+[tool.setuptools]
+packages = ["kaillm"]
+include-package-data = false
+
+[tool.setuptools.package-data]
+kaillm = ["_runtime/**/*"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["**/__pycache__/*", "**/*.pyc", "**/*.pyo"]

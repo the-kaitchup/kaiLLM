@@ -1,0 +1,9 @@
+kaiLLM
+Copyright 2026 Benjamin Marie
+
+Built on vLLM, licensed under the Apache License, Version 2.0.
+Includes portions of llama.cpp / ggml, licensed under the MIT License.
+
+Third-party copyright notices and licenses are preserved with the distributed
+runtime. GNU runtime libraries are distributed with their license notices and
+corresponding source archives in the full release bundle.
