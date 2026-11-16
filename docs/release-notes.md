@@ -1,3 +1,27 @@
+# kaiLLM 0.1.0rc5
+
+Qwen3.8 27B kaiPTQ checkpoints, which also run on the RTX 3060.
+
+- kaiPTQ checkpoints can now contain ITQ tensors: trellis codes, as in QTIP,
+  decoded with an integer table, from 1.25 to 3 bits per weight. Each step
+  decodes 4 weights from a 12-bit table, or 2 weights from a 10-bit table of
+  int8 pairs. The decode, GEMV and prefill kernels are prebuilt for compute
+  capability 8.6 and 12.0, so the first server start doesn't compile them.
+- Qwen3.8 kaiPTQ checkpoints run on the RTX 3060 (compute capability 8.6).
+  Plain Qwen3.5 and Qwen3.8 GGUFs are still qualified on Blackwell only.
+- The first one, [kaitchup/Qwen3.8-27B-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-kaiPTQ),
+  is 6.73 GB, the same file size as unsloth's UD-IQ1_M. Its KL divergence to
+  the BF16 model on held-out reasoning traces and code is 57% lower. On the
+  RTX 3060, kaiLLM runs it 12% faster at batch 1 and 32% faster at batch 8
+  than llama.cpp runs UD-IQ1_M, and prefills 76% faster.
+- The installer now works from a clone of the repository: it imported the
+  clone's kaillm folder instead of the installed package and failed at its
+  last step.
+- MTP speculative decoding now uses the verification paths from my speculative
+  decoding work: split-KV attention sized for each verification length, and
+  vLLM's fused GDN path up to 16 tokens. I didn't measure the 0.1.0rc4 MTP
+  figures again with this release.
+
 # kaiLLM 0.1.0rc4
 
 The weights now stay quantized in VRAM, as with llama.cpp.

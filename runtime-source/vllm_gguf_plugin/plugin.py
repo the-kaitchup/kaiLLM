@@ -422,3 +422,22 @@ def register() -> None:
     _patch_speculator_probe()
     _patch_mtp_draft_config()
     _patch_diffusers_loader()
+    from .spec_attention import install as install_spec_attention
+
+    install_spec_attention()
+
+    from .gdn_spec import install as install_gdn_spec
+
+    install_gdn_spec()
+
+    from .kv_groups import install as install_kv_groups
+
+    install_kv_groups()
+
+    from .memlog import install as install_memlog
+
+    install_memlog()
+
+    from .tq_spec import install as install_tq_spec
+
+    install_tq_spec()

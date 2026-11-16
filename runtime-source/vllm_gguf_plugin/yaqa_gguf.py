@@ -61,6 +61,67 @@ def validate_yaqa_descriptor(descriptor, tensor_names=None):
         if descriptor.get("bits") != 4:
             raise ValueError("YAQA scalar-int4 requires four bits per value")
         required = {"packed", "scales"}
+    elif codec == "itq":
+        bps = descriptor.get("bps")
+        fmt = (descriptor.get("L"), descriptor.get("V"), descriptor.get("table_bits"))
+        if (
+            descriptor.get("version") != 1
+            or fmt not in ((16, 4, 12), (16, 2, 10))
+            or descriptor.get("hash") != "mul"
+            or descriptor.get("layout") != "tile16-rowmajor-steps-lsb"
+            or type(bps) is not int
+            or bps not in (range(4, 13) if fmt[1] == 4 else range(3, 7))
+            or any(n % 16 for n in shape)
+            or shape[1] % 32
+        ):
+            raise ValueError("Unsupported ITQ trellis contract")
+        for axis in ("rotation_in", "rotation_out"):
+            kind = descriptor.get(axis)
+            if kind != "fwht" and not (isinstance(kind, str) and kind.startswith("block")):
+                raise ValueError("Unsupported ITQ rotation")
+        required = {"stream", "su", "sv", "wscale", "table"}
+    elif codec == "itqvocab":
+        vocab, dim = shape
+        rotation = descriptor.get("rotation")
+        block = dim if rotation == "fwht" else (
+            int(rotation[5:]) if isinstance(rotation, str) and rotation.startswith("block") and rotation[5:].isdigit()
+            else 0)
+        classes = descriptor.get("classes")
+        if (
+            descriptor.get("version") != 1
+            or dim % 1024
+            or block not in (256, 512, 1024, 2048)
+            or dim % block
+            or not isinstance(classes, list)
+            or not 1 <= len(classes) <= 8
+            or vocab >= 1 << 24
+        ):
+            raise ValueError("Unsupported ITQ vocabulary contract")
+        required = {"su", "map"}
+        total = 0
+        for k, item in enumerate(classes):
+            kind, rows = item.get("kind") if isinstance(item, dict) else None, item.get("rows") if isinstance(item, dict) else None
+            if kind not in ("int8", "nf4", "itq") or type(rows) is not int or rows < 1:
+                raise ValueError("Unsupported ITQ vocabulary class")
+            total += rows
+            required |= {f"c{k}.rows", f"c{k}.scale"}
+            if kind == "int8":
+                required.add(f"c{k}.q")
+            elif kind == "nf4":
+                required |= {f"c{k}.codes", f"c{k}.levels"}
+            else:
+                bps = item.get("bps")
+                if (
+                    type(bps) is not int
+                    or bps not in range(4, 13)
+                    or (item.get("L"), item.get("V"), item.get("table_bits")) != (16, 4, 12)
+                    or item.get("hash") != "mul"
+                    or item.get("layout") != "tile16-rowmajor-steps-lsb"
+                ):
+                    raise ValueError("Unsupported ITQ vocabulary trellis class")
+                required |= {f"c{k}.stream", f"c{k}.wscale", "table"}
+        if total != vocab:
+            raise ValueError("ITQ vocabulary classes must cover every token once")
     else:
         raise ValueError(f"Unsupported YAQA codec: {codec!r}")
     if not required <= components.keys():
@@ -156,6 +217,58 @@ def load_yaqa_components(reader, descriptor):
             p = width // k
             if p & (p - 1):
                 raise ValueError("Hadamard butterfly width must be a power of two")
+    elif descriptor["codec"] == "itq":
+        bps, V = descriptor["bps"], descriptor["V"]   # tile bytes: 256 / V steps of bps bits
+        expected.update(stream=(m * n // 256, 32 * bps // V), su=(n,), sv=(m,),
+                        table=(1 << descriptor["table_bits"], V))
+        for field in ("stream", "su", "sv", "table"):
+            if result[field].dtype != torch.int8:
+                raise ValueError("ITQ " + field + " requires int8 storage")
+        if result["wscale"].numel() != 1 or not bool(result["wscale"].reshape(()) > 0):
+            raise ValueError("ITQ requires one positive global scale")
+        if "bias" in result:
+            expected["bias"] = (m,)
+    elif descriptor["codec"] == "itqvocab":
+        vocab, dim = m, n
+        expected.update(su=(dim,), map=(vocab,))
+        dtypes_needed = {"su": torch.int8, "map": torch.int32}
+        token_map = torch.full((vocab,), -1, dtype=torch.int64, device="cpu")   # models load under a CUDA device context
+        for k, item in enumerate(descriptor["classes"]):
+            rows = item["rows"]
+            expected[f"c{k}.rows"] = (rows,)
+            expected[f"c{k}.scale"] = (rows,)
+            dtypes_needed[f"c{k}.rows"] = torch.int32
+            dtypes_needed[f"c{k}.scale"] = torch.float32
+            if item["kind"] == "int8":
+                expected[f"c{k}.q"] = (rows, dim)
+                dtypes_needed[f"c{k}.q"] = torch.int8
+            elif item["kind"] == "nf4":
+                expected[f"c{k}.codes"] = (rows, dim // 2)
+                expected[f"c{k}.levels"] = (16,)
+                dtypes_needed[f"c{k}.codes"] = torch.int8
+                dtypes_needed[f"c{k}.levels"] = torch.float32
+            else:
+                padded = (rows + 15) // 16 * 16
+                expected[f"c{k}.stream"] = (padded * dim // 256, 8 * item["bps"])
+                expected[f"c{k}.wscale"] = (1,)
+                expected["table"] = (4096, 4)
+                dtypes_needed[f"c{k}.stream"] = torch.int8
+                dtypes_needed[f"c{k}.wscale"] = torch.float32
+                dtypes_needed["table"] = torch.int8
+                scale = result[f"c{k}.wscale"]
+                if scale.numel() != 1 or not bool(scale.reshape(-1)[0] > 0):
+                    raise ValueError("ITQ vocabulary trellis classes need one positive scale")
+            ids = result[f"c{k}.rows"].to(torch.int64)
+            if tuple(ids.shape) != (rows,) or bool(((ids < 0) | (ids >= vocab)).any()):
+                raise ValueError("ITQ vocabulary row ids out of range")
+            if bool((token_map[ids] != -1).any()):
+                raise ValueError("ITQ vocabulary token assigned to two classes")
+            token_map[ids] = (k << 24) | torch.arange(rows, dtype=torch.int64, device="cpu")
+        for field, dtype in dtypes_needed.items():
+            if result[field].dtype != dtype:
+                raise ValueError(f"ITQ vocabulary {field} requires {dtype}")
+        if bool((token_map < 0).any()) or not torch.equal(token_map, result["map"].to(torch.int64)):
+            raise ValueError("ITQ vocabulary map disagrees with the class rows")
     else:
         expected["packed"] = (
             (m * n + 4) // 5 if descriptor["codec"] == "ternary" else (m * n + 1) // 2,
@@ -192,6 +305,86 @@ def _hadamard(value, factor):
     if k > 1:
         result = factor.to(value) @ result
     return (result * n**-0.5).reshape(value.shape)
+
+
+def _block_hadamard(value, kind):
+    """Orthonormal Sylvester Hadamard along the last axis, per power-of-two block."""
+    n = value.shape[-1]
+    size = n if kind == "fwht" else int(kind[5:])
+    result = value.reshape(-1, n // size, size)
+    width = 1
+    while width < size:
+        pairs = result.reshape(*result.shape[:-1], -1, 2, width)
+        first, second = pairs[..., 0, :], pairs[..., 1, :]
+        result = __import__("torch").stack((first + second, first - second), -2).reshape(result.shape)
+        width *= 2
+    return (result * size**-0.5).reshape(value.shape)
+
+
+def _trellis_tiles(stream, bps, table_bits, table):
+    """Raw table values of ITQ tiles: [tiles, 256] in tile row-major order (FP64)."""
+    import torch
+
+    stream = stream.view(torch.uint8).to(torch.int64)
+    bits = ((stream[:, :, None] >> torch.arange(8)) & 1).reshape(stream.shape[0], -1)
+    total = bits.shape[1]
+    ends = (torch.arange(64) + 1) * bps
+    offsets = torch.arange(16)
+    window = bits[:, (ends[:, None] - 16 + offsets[None]) % total]
+    states = (window << offsets).sum(-1)
+    index = ((states * 0x9E3779B1) % (1 << 32)) >> (32 - table_bits)
+    return table.to(torch.float64)[index].reshape(-1, 256)
+
+
+def reconstruct_itq_vocab(descriptor, components):
+    """Dense FP32 oracle [vocab, dim] of an ITQ vocabulary (tests; not a serving path)."""
+    import torch
+
+    vocab, dim = descriptor["shape"]
+    rotated = torch.zeros(vocab, dim, dtype=torch.float64)
+    for k, item in enumerate(descriptor["classes"]):
+        ids = components[f"c{k}.rows"].to(torch.int64)
+        scale = components[f"c{k}.scale"].double()[:, None]
+        if item["kind"] == "int8":
+            rows = components[f"c{k}.q"].double()
+        elif item["kind"] == "nf4":
+            packed = components[f"c{k}.codes"].view(torch.uint8).to(torch.int64)
+            codes = torch.stack((packed & 15, packed >> 4), dim=-1).reshape(len(ids), dim)
+            rows = components[f"c{k}.levels"].double()[codes]
+        else:
+            padded = (len(ids) + 15) // 16 * 16
+            tiles = _trellis_tiles(components[f"c{k}.stream"], item["bps"], 12, components["table"])
+            rows = tiles.reshape(padded // 16, dim // 16, 16, 16).transpose(1, 2).reshape(padded, dim)[: len(ids)]
+            rows = rows * components[f"c{k}.wscale"].double().reshape(())
+        rotated[ids] = rows * scale
+    rotation = descriptor["rotation"]
+    return (_block_hadamard(rotated, rotation) * components["su"].double()).float()
+
+
+def reconstruct_itq(descriptor, components):
+    """Dense FP32 oracle of an ITQ matrix (tests and canonical scoring; not a serving path)."""
+    import torch
+
+    m, n = descriptor["shape"]
+    bps, steps = descriptor["bps"], 256 // descriptor["V"]
+    stream = components["stream"].view(torch.uint8).to(torch.int64)
+    bits = ((stream[:, :, None] >> torch.arange(8)) & 1).reshape(stream.shape[0], -1)
+    total = bits.shape[1]
+    ends = (torch.arange(steps) + 1) * bps
+    offsets = torch.arange(16)
+    window = bits[:, (ends[:, None] - 16 + offsets[None]) % total]
+    states = (window << offsets).sum(-1)
+    index = ((states * 0x9E3779B1) % (1 << 32)) >> (32 - descriptor["table_bits"])
+    values = components["table"].to(torch.float64)[index].reshape(-1, 256)
+    value = values.reshape(m // 16, n // 16, 16, 16).transpose(1, 2).reshape(m, n)
+    value = value * components["wscale"].double().reshape(())
+    value = _block_hadamard(value, descriptor["rotation_in"]) * components["su"].double()
+    value = (_block_hadamard(value.T, descriptor["rotation_out"]) * components["sv"].double()).T
+    if "post_output_scale" in components:
+        value = value * components["post_output_scale"].double()[:, None]
+    if "post_input_scale" in components:
+        value = value * components["post_input_scale"].double()[None, :]
+    return value.contiguous().float()
 
 
 def reconstruct_yaqa(descriptor, components, *, dtype=None):
@@ -246,6 +439,8 @@ def reconstruct_yaqa(descriptor, components, *, dtype=None):
             value *= components["post_output_scale"].float()[:, None]
         if "post_input_scale" in components:
             value *= components["post_input_scale"].float()[None, :]
+    elif descriptor["codec"] == "itq":
+        value = reconstruct_itq(descriptor, components)
     elif descriptor["codec"] == "ternary":
         packed = components["packed"].view(torch.uint8).to(torch.int16).flatten()
         if len(packed) != (m * n + 4) // 5 or bool((packed > 242).any()):

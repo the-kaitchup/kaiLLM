@@ -45,6 +45,27 @@ def parser():
     result.add_argument("--device", help="CUDA_VISIBLE_DEVICES selection")
     result.add_argument("--cpu-cache-dir")
     result.add_argument(
+        "--cpu-fit", metavar="CONTEXT",
+        help="Fit CONTEXT tokens (e.g. 32768, 128k, max) by enabling lossless memory measures one at a time, "
+             "including lookup tables in pinned host memory; without it everything stays on the GPU (see cpu_fit.py)",
+    )
+    result.add_argument(
+        "--kv-cache-dtype", default="auto",
+        help="KV-cache dtype (vLLM names, e.g. turboquant_k8v4 / turboquant_4bit_nc: changes outputs, opt-in only)",
+    )
+    result.add_argument(
+        "--kv-cache-dtype-skip-layers", metavar="LIST",
+        help="comma-separated layer indices or attention types kept at the model dtype (e.g. sliding_window)",
+    )
+    result.add_argument(
+        "--extra-vllm-args", metavar="JSON",
+        help='raw vLLM arguments appended to the command, as a JSON list (e.g. ["--reasoning-parser", "qwen3"])',
+    )
+    result.add_argument(
+        "--speculative-config", metavar="JSON",
+        help="vLLM speculative config to use instead of the GGUF's default drafts (e.g. a DSpine / dflash drafter)",
+    )
+    result.add_argument(
         "--catalog", type=Path,
         default=Path(__file__).parent / "native/serving-catalog.json",
     )
@@ -86,9 +107,18 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         spec = policy.speculative_config(
             tokens, selected["conditional_adapter"], args.lookup_min, args.lookup_max
         )
+    if getattr(args, "speculative_config", None):
+        spec = json.loads(args.speculative_config)
+        tokens = int(spec.get("num_speculative_tokens", tokens))
     captures = policy.capture_family(
         args.max_num_seqs, tokens, args.max_num_batched_tokens
     )
+    prefill_graphs = os.getenv("KAILLM_PREFILL_GRAPHS", "1") != "0"
+    if not prefill_graphs:
+        # decode / verification graphs only: prefill chunks run eagerly (their graphs hold the largest activation
+        # pool; ~1 % of a chunk's time on an RTX 3060), which leaves that memory to the KV cache
+        rows = args.max_num_seqs * (tokens + 1)
+        captures = [c for c in captures if c <= 2 * rows] or [rows]
     graph = {
         "mode": 0, "cudagraph_mode": "FULL_AND_PIECEWISE",
         "cudagraph_capture_sizes": captures,
@@ -98,8 +128,9 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         executable, "-m", "vllm.entrypoints.cli.main", "serve", args.model,
         "--host", args.host, "--port", str(args.port),
         "--quantization", "gguf", "--load-format", "gguf", "--dtype", "bfloat16",
-        "--attention-config", json.dumps({"backend": "TRITON_ATTN"}),
-        "--kv-cache-dtype", "auto", "--mamba-cache-dtype", "auto",
+        *(() if str(getattr(args, "kv_cache_dtype", "auto")).startswith(("turboquant_", "ultraquant_"))
+          else ("--attention-config", json.dumps({"backend": "TRITON_ATTN"}))),   # packed KV: vLLM picks its backend
+        "--kv-cache-dtype", getattr(args, "kv_cache_dtype", "auto") or "auto", "--mamba-cache-dtype", "auto",
         "--max-num-seqs", str(args.max_num_seqs),
         "--max-num-batched-tokens", str(args.max_num_batched_tokens),
         "--async-scheduling", "--long-prefill-token-threshold", "0",
@@ -107,7 +138,7 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         "--kv-cache-memory-bytes", str(args.kv_cache_memory_bytes),
         "--gpu-memory-utilization", str(args.gpu_memory_utilization),
         "--compilation-config", json.dumps(graph),
-        "--additional-config", json.dumps({"cudagraph_specialize_prefill": True}),
+        "--additional-config", json.dumps({"cudagraph_specialize_prefill": prefill_graphs}),
     ]
     for option, value in (
         ("--max-model-len", args.max_model_len), ("--tokenizer", args.tokenizer),
@@ -118,6 +149,10 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
             command += [option, str(value)]
     if spec is not None:
         command += ["--speculative-config", json.dumps(spec)]
+    if getattr(args, "kv_cache_dtype_skip_layers", None):
+        command += ["--kv-cache-dtype-skip-layers", *args.kv_cache_dtype_skip_layers.split(",")]
+    if getattr(args, "extra_vllm_args", None):
+        command += [str(x) for x in json.loads(args.extra_vllm_args)]
     environment = dict(selected["environment"])
     environment.update(family.get("environment", {}))
     if args.device is not None:

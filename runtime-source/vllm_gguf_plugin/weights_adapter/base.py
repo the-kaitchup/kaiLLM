@@ -22,6 +22,9 @@ class GGUFLoadSpec:
     # GGUF tensor name -> int64 index: loaded rows/columns = stored[index].
     gguf_row_permutations: dict[str, torch.Tensor] | None = None
     gguf_column_permutations: dict[str, torch.Tensor] | None = None
+    # The model maps only part of the file (e.g. an MTP drafter): yaqa.manifest matrices outside
+    # gguf_to_hf_name_map belong to the other model and are skipped instead of rejected.
+    yaqa_subset: bool = False
 
 
 class BaseGGUFWeightsAdapter(ABC):

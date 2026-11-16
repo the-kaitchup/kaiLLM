@@ -45,9 +45,10 @@ llama.cpp and other GGUF runtimes can't load them.
 | Model | Checkpoints | Format |
 |---|---|---|
 | [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) | UD-Q4_K_XL and UD-Q2_K_XL |   GGUF tensors, with the MTP layer |
+| [kaitchup/Qwen3.8-27B-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-kaiPTQ) | 6.7 GB | kaiPTQ (mixed ITQ and GGUF tensors), without the MTP layer |
 
 In this release, Qwen3.5 and Qwen3.8 GGUFs only run on Blackwell GPUs (compute
-capability 12.0).
+capability 12.0). The Qwen3.8 kaiPTQ checkpoint also runs on the RTX 3060.
 
 ## Install
 
@@ -83,6 +84,12 @@ Qwen3.8 27B works the same way:
 
 ```bash
 kaillm serve unsloth/Qwen3.8-27B-GGUF:Qwen3.8-27B-UD-Q4_K_XL.gguf
+```
+
+The Qwen3.8 kaiPTQ checkpoint also runs on a 12 GB RTX 3060:
+
+```bash
+kaillm serve kaitchup/Qwen3.8-27B-kaiPTQ:Qwen3.8-27B-kaiPTQ-6.7GB.gguf
 ```
 
 The tokenizer, GPU profile and eligible quantization paths are selected
@@ -179,6 +186,14 @@ llama.cpp can't run kaiPTQ checkpoints, so the baseline is LiquidAI's Q4_K_M GGU
 | RTX 5090 | chimachima 1250 MB | 446.5 / 630.0 (-29.1%) | 2,472 / 2,100 (**+17.7%**) | 3,550 / 2,746 (**+29.3%**) | 39,675 / 31,900 (**+24.4%**) |
 | RTX 5090 | chimachima 1500 MB | 437.7 / 630.0 (-30.5%) | 2,974 / 2,100 (**+41.6%**) | 4,369 / 2,746 (**+59.1%**) | 46,679 / 31,900 (**+46.3%**) |
 
+### Qwen3.8 27B kaiPTQ (kaiLLM) vs UD-IQ1_M (llama.cpp)
+
+llama.cpp can't run kaiPTQ checkpoints, so the baseline is unsloth's UD-IQ1_M GGUF, which has the same file size. Measured with kaiLLM 0.1.0rc5. To fit in 12 GB next to the desktop, both engines served 16 sequences with a shorter context than in the other tables. Each figure is the median of 3 to 5 runs.
+
+| GPU | Checkpoint | Batch 1 | Batch 2 | Batch 8 | Batch 16 | Prefill |
+|---|---|---:|---:|---:|---:|---:|
+| RTX 3060 | kaiPTQ 6.7 GB / UD-IQ1_M | 26.4 / 23.5 (**+12.3%**) | 37.8 / 34.6 (**+9.2%**) | 68.6 / 51.9 (**+32.2%**) | 68.5 / 70.8 (-3.2%) | 929 / 527 (**+76.3%**) |
+
 ### suisui: kaiLLM vs llama.cpp (same GGUF)
 
 
@@ -223,7 +238,8 @@ for the individual checkpoints.
 
 The matrix distinguishes checkpoints covered by the optimization work from
 checkpoints benchmarked with the existing implementation. Suisui was optimized on
-the RTX 3060, and Qwen3.8 27B on the RTX Pro 6000.
+the RTX 3060, and Qwen3.8 27B on the RTX Pro 6000. The Qwen3.8 kaiPTQ checkpoint
+was also optimized on the RTX 3060.
 
 | Model checkpoint | RTX 3060 | A40 | RTX 5090 |
 |---|---|---|---|
@@ -245,6 +261,7 @@ the RTX 3060, and Qwen3.8 27B on the RTX Pro 6000.
 |---|---|
 | Qwen3.8 27B UD-Q4_K_XL | Optimized |
 | Qwen3.8 27B UD-Q2_K_XL | Optimized |
+| Qwen3.8 27B kaiPTQ 6.7 GB | Optimized |
 
 **Optimized** marks checkpoint/GPU combinations used to tune and validate the
 kernels and serving profiles. Tuning used ngram speculative decoding with
@@ -262,6 +279,8 @@ capacity. Performance at other models, batches and GPUs still needs testing.
 
 - Load GGUF files directly, including mixed tensor formats.
 - Load kaiPTQ checkpoints, which combine GGUF and YAQA tensors in one file.
+- Load Qwen3.8 kaiPTQ checkpoints with ITQ tensors: trellis codes with an
+  integer decode table, from 1.25 to 3 bits per weight.
 - Support K-quants, IQ formats and YAQA QTIP bit widths, with fallback paths
   for formats without an optimized native kernel.
 - Use separate prefill and decode paths, CUDA graphs and automatic hardware
@@ -273,7 +292,7 @@ a subset of that format coverage.
 
 ## Roadmap
 
-- Broader model support, and Qwen3.5/Qwen3.8 on Ampere GPUs (RTX 3060, RTX 3090, A40).
+- Broader model support, and Qwen3.5/Qwen3.8 GGUFs on Ampere GPUs (RTX 3060, RTX 3090, A40).
 - RTX 5080 and RTX 3090 qualification and optimization.
 - More native paths for kaiPTQ checkpoints and better concurrency.
 

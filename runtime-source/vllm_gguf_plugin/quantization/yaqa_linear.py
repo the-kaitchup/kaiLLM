@@ -43,6 +43,8 @@ def configure_yaqa_loading(quant_config, load_spec):
                 add_source(tensor.name, (path, tensor.name, None))
         for name, descriptor in descriptors.items():
             if name not in mapping:
+                if getattr(load_spec, "yaqa_subset", False):    # e.g. the target's matrices in an MTP drafter
+                    continue
                 raise ValueError(f"YAQA logical matrix has no model mapping: {name}")
             add_source(name, (path, name, descriptor))
     from .yaqa_prefill_cache import create_plan
@@ -180,15 +182,16 @@ class YAQAMixedLinearMethod(LinearMethodBase):
             if len(self.parts) == 1
             else output_partition_sizes
         )
-        if len(expected_rows) != len(self.parts) and all(
-            descriptor is None for _, (_, _, descriptor) in self.parts
-        ):
-            # One GGUF tensor may hold several consecutive vLLM output partitions
-            # (e.g. Qwen3.5 attn_qkv = q|k|v of in_proj_qkvz = q|k|v|z): group them.
+        if len(expected_rows) != len(self.parts):
+            # One GGUF tensor (ordinary or a logical YAQA/ITQ matrix) may hold several consecutive vLLM
+            # output partitions (e.g. Qwen3.5 attn_qkv = q|k|v of in_proj_qkvz = q|k|v|z): group them.
             grouped, index = [], 0
-            for _, (path, tensor_name, _) in self.parts:
-                tensor = self.quant_config.yaqa_tensor_maps[path][tensor_name]
-                rows = int(tuple(reversed(tensor.shape))[0])
+            for _, (path, tensor_name, descriptor) in self.parts:
+                if descriptor is not None:
+                    rows = int(descriptor["shape"][0])
+                else:
+                    tensor = self.quant_config.yaqa_tensor_maps[path][tensor_name]
+                    rows = int(tuple(reversed(tensor.shape))[0])
                 total = 0
                 while index < len(output_partition_sizes) and total < rows:
                     total += output_partition_sizes[index]
@@ -208,7 +211,18 @@ class YAQAMixedLinearMethod(LinearMethodBase):
                 or tensor_name in getattr(self.quant_config, "gguf_column_permutations", {})
             ):
                 raise ValueError(f"Permuted YAQA matrices are not supported: {tensor_name}")
-            if descriptor is not None:
+            if descriptor is not None and descriptor.get("codec") == "itq":
+                from .itq import PackedITQLinear
+
+                module = PackedITQLinear(
+                    descriptor,
+                    load_yaqa_components(reader, descriptor),
+                    params_dtype,
+                    device=device,
+                )
+                module.codec = "itq"
+                rows, cols = module.shape
+            elif descriptor is not None:
                 module = PackedYAQALinear(
                     descriptor,
                     load_yaqa_components(reader, descriptor),
@@ -258,6 +272,9 @@ class YAQAMixedLinearMethod(LinearMethodBase):
         if sum(module.shape[0] for module in modules) != sum(output_partition_sizes):
             raise ValueError("Mixed YAQA output shape differs from vLLM partitions")
         layer.yaqa_parts = torch.nn.ModuleList(modules)
+        if all(getattr(m, "codec", None) == "itq" for m in modules):
+            # decided once at load: CUDA graphs must not see a host-synchronising comparison
+            layer._itq_shared_input = all(modules[0].shares_input_with(m) for m in modules[1:])
         if gathers:
             if len(gathers) != len(modules) or any(not torch.equal(g, gathers[0]) for g in gathers):
                 raise ValueError("Merged GGUF projections need one shared input permutation")
@@ -367,6 +384,18 @@ class YAQAMixedLinearMethod(LinearMethodBase):
         return self._apply_original(layer, x, bias)
 
     def _apply_original(self, layer, x, bias=None):
+        parts = layer.yaqa_parts
+        shared = getattr(layer, "_itq_shared_input", None)
+        if shared is not None and x.is_cuda:
+            from .itq import forward_group
+
+            if shared:
+                # _itq_raw_out (decode producers whose next op is a bound Gemma norm): raw F32 output, see itq.RAW
+                output = forward_group(list(parts), x, raw=layer.__dict__.get("_itq_raw_out", False))
+            else:
+                outputs = [forward_group([p], x) for p in parts]
+                output = outputs[0] if len(outputs) == 1 else torch.cat(outputs, dim=-1)
+            return output if bias is None else output + bias
         grouped = getattr(layer, "_yaqa_grouped_state", None)
         if grouped is not None:
             from .yaqa_grouped import opaque_grouped
