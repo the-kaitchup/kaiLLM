@@ -9,7 +9,8 @@ Qwen3.8 27B kaiPTQ checkpoints, which also run on the RTX 3060.
   capability 8.6 and 12.0, so the first server start doesn't compile them.
 - Qwen3.8 kaiPTQ checkpoints run on the RTX 3060 (compute capability 8.6).
   Plain Qwen3.5 and Qwen3.8 GGUFs are still qualified on Blackwell only.
-- The first one, [kaitchup/Qwen3.8-27B-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-kaiPTQ),
+- The first one, Q2_K_XXS in
+  [kaitchup/Qwen3.8-27B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-chimachima-kaiPTQ),
   is 6.73 GB, the same file size as unsloth's UD-IQ1_M. Its KL divergence to
   the BF16 model on held-out reasoning traces and code is 57% lower. On the
   RTX 3060, kaiLLM runs it 12% faster at batch 1 and 32% faster at batch 8

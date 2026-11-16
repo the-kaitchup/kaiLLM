@@ -45,17 +45,17 @@ llama.cpp and other GGUF runtimes can't load them.
 | Model | Checkpoints | Format |
 |---|---|---|
 | [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) | UD-Q4_K_XL and UD-Q2_K_XL |   GGUF tensors, with the MTP layer |
-| [kaitchup/Qwen3.8-27B-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-kaiPTQ) | 6.7 GB | kaiPTQ (mixed ITQ and GGUF tensors), without the MTP layer |
+| [kaitchup/Qwen3.8-27B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-chimachima-kaiPTQ) | Q2_K_XXS (6.7 GB) | kaiPTQ (mixed ITQ and GGUF tensors), without the MTP layer |
 
 In this release, Qwen3.5 and Qwen3.8 GGUFs only run on Blackwell GPUs (compute
-capability 12.0). The Qwen3.8 kaiPTQ checkpoint also runs on the RTX 3060.
+capability 12.0). The Qwen3.8 chimachima checkpoint also runs on the RTX 3060.
 
 ## Install
 
 Requirements: Linux + CUDA 13.
 
 ```bash
-git clone https://github.com/the-kaitchup/kaiLLM.git
+git clone --branch rc5 https://github.com/the-kaitchup/kaiLLM.git
 cd kaiLLM
 bash install.sh
 ```
@@ -86,10 +86,10 @@ Qwen3.8 27B works the same way:
 kaillm serve unsloth/Qwen3.8-27B-GGUF:Qwen3.8-27B-UD-Q4_K_XL.gguf
 ```
 
-The Qwen3.8 kaiPTQ checkpoint also runs on a 12 GB RTX 3060:
+The Qwen3.8 chimachima checkpoint (early access, see its model card) also runs on a 12 GB RTX 3060:
 
 ```bash
-kaillm serve kaitchup/Qwen3.8-27B-kaiPTQ:Qwen3.8-27B-kaiPTQ-6.7GB.gguf
+kaillm serve kaitchup/Qwen3.8-27B-chimachima-kaiPTQ:Qwen3.8-27B-chimachima-Q2_K_XXS.gguf
 ```
 
 The tokenizer, GPU profile and eligible quantization paths are selected
@@ -192,7 +192,7 @@ llama.cpp can't run kaiPTQ checkpoints, so the baseline is unsloth's UD-IQ1_M GG
 
 | GPU | Checkpoint | Batch 1 | Batch 2 | Batch 8 | Batch 16 | Prefill |
 |---|---|---:|---:|---:|---:|---:|
-| RTX 3060 | kaiPTQ 6.7 GB / UD-IQ1_M | 26.4 / 23.5 (**+12.3%**) | 37.8 / 34.6 (**+9.2%**) | 68.6 / 51.9 (**+32.2%**) | 68.5 / 70.8 (-3.2%) | 929 / 527 (**+76.3%**) |
+| RTX 3060 | chimachima Q2_K_XXS / UD-IQ1_M | 26.4 / 23.5 (**+12.3%**) | 37.8 / 34.6 (**+9.2%**) | 68.6 / 51.9 (**+32.2%**) | 68.5 / 70.8 (-3.2%) | 929 / 527 (**+76.3%**) |
 
 ### suisui: kaiLLM vs llama.cpp (same GGUF)
 
@@ -238,7 +238,7 @@ for the individual checkpoints.
 
 The matrix distinguishes checkpoints covered by the optimization work from
 checkpoints benchmarked with the existing implementation. Suisui was optimized on
-the RTX 3060, and Qwen3.8 27B on the RTX Pro 6000. The Qwen3.8 kaiPTQ checkpoint
+the RTX 3060, and Qwen3.8 27B on the RTX Pro 6000. The Qwen3.8 chimachima checkpoint
 was also optimized on the RTX 3060.
 
 | Model checkpoint | RTX 3060 | A40 | RTX 5090 |
@@ -261,7 +261,7 @@ was also optimized on the RTX 3060.
 |---|---|
 | Qwen3.8 27B UD-Q4_K_XL | Optimized |
 | Qwen3.8 27B UD-Q2_K_XL | Optimized |
-| Qwen3.8 27B kaiPTQ 6.7 GB | Optimized |
+| Qwen3.8 27B chimachima Q2_K_XXS | Optimized |
 
 **Optimized** marks checkpoint/GPU combinations used to tune and validate the
 kernels and serving profiles. Tuning used ngram speculative decoding with

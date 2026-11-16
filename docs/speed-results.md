@@ -1,6 +1,6 @@
 # kaiLLM throughput
 
-All results below were obtained with kaiLLM 0.1.0rc4, without speculative decoding unless the row says otherwise. The Qwen3.8 kaiPTQ row was obtained with kaiLLM 0.1.0rc5, with 16 sequences and a shorter context to fit in 12 GB.
+All results below were obtained with kaiLLM 0.1.0rc4, without speculative decoding unless the row says otherwise. The Qwen3.8 chimachima row was obtained with kaiLLM 0.1.0rc5, with 16 sequences and a shorter context to fit in 12 GB.
 
 Generation uses 512 input tokens and 256 generated tokens, including prefill. Prefill uses 512 or 2048 input tokens. Rates are aggregate tokens/s. "Weights in VRAM" is the memory held by the model's weights after loading, compared with the GGUF file size.
 
@@ -23,7 +23,7 @@ Generation uses 512 input tokens and 256 generated tokens, including prefill. Pr
 | AtomicChat AD-Q5_K_M | 188.7 | 338.2 | 647.5 | 1,273 | 7,345 | 8,081 |
 | AtomicChat AD-Q6_K | 163.6 | 299.4 | 647.3 | 1,171 | 7,338 | 8,040 |
 | LiquidAI Q8_0 | 146.7 | 277.8 | 732.3 | 1,153 | 8,015 | 8,815 |
-| Qwen3.8 27B kaiPTQ 6.7 GB | 26.4 | 37.8 | 68.6 | 68.5 |  | 929 |
+| Qwen3.8 27B chimachima Q2_K_XXS | 26.4 | 37.8 | 68.6 | 68.5 |  | 929 |
 
 ## A40
 
