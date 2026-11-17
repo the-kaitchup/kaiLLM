@@ -5,6 +5,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path, PurePosixPath
 import re
 import shutil
@@ -102,7 +103,10 @@ def install(archive=None, prefix=None):
         command = ["bash", str(root / "install.sh")]
         if prefix is not None:
             command += ["--prefix", str(Path(prefix).expanduser())]
-        subprocess.run(command, check=True)
+        # The release installer runs `python -m kaillm.install_native_runtime`. PYTHONSAFEPATH keeps the current
+        # directory off its module path: run from this checkout, the checkout's kaillm/ folder would shadow the
+        # installed package.
+        subprocess.run(command, check=True, env={**os.environ, "PYTHONSAFEPATH": "1"})
 
 
 def main():
