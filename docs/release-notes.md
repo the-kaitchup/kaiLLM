@@ -24,7 +24,7 @@ Qwen3.8 27B kaiPTQ checkpoints, which also run on the RTX 3060, and DSpine specu
   thinking, it makes the Q2_K_XXS checkpoint 1.85× faster on the RTX Pro 6000
   and 1.92× faster on the RTX 3060. On GPUs with 16 GB or less, `--dspine`
   defaults to a 1 GiB KV cache and 512-token prefill chunks: with the larger
-  defaults, the server went past 12 GB and WSL paged GPU memory to system RAM.
+  defaults, the server went past 12 GB and decoding got about 4x slower.
 - The installer now works from a clone of the repository: it imported the
   clone's kaillm folder instead of the installed package and failed at its
   last step.

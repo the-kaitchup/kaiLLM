@@ -59,8 +59,7 @@ def prepare_serve(args, forwarded):
     if capability not in ("8.6", "12.0"):
         raise ValueError("This release is qualified for compute capabilities 8.6 and 12.0")
     # DSpine adds a 1.5 GB drafter. On GPUs with 16 GB or less, a 1 GiB KV cache (8,192 tokens for one sequence) and
-    # 512-token prefill chunks keep the server within the GPU's memory: beyond it, WSL pages GPU memory to system RAM
-    # and decoding gets about 4x slower.
+    # 512-token prefill chunks keep the server within the GPU's memory: beyond it, decoding gets about 4x slower.
     small_dspine = any(a == "--dspine" or a.startswith("--dspine=") for a in forwarded) and (
         gpu["total_memory_MiB"] <= 16 * 1024 if gpu else capability == "8.6")
     kv = args.kv_cache_memory_bytes
