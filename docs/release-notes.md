@@ -1,6 +1,6 @@
 # kaiLLM 0.1.0rc5
 
-Qwen3.8 27B kaiPTQ checkpoints, which also run on the RTX 3060.
+Qwen3.8 27B kaiPTQ checkpoints, which also run on the RTX 3060, and DSpine speculative decoding.
 
 - kaiPTQ checkpoints can now contain ITQ tensors: trellis codes, as in QTIP,
   decoded with an integer table, from 1.25 to 3 bits per weight. Each step
@@ -13,15 +13,27 @@ Qwen3.8 27B kaiPTQ checkpoints, which also run on the RTX 3060.
   [kaitchup/Qwen3.8-27B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-chimachima-kaiPTQ),
   is 6.73 GB, the same file size as unsloth's UD-IQ1_M. Its KL divergence to
   the BF16 model on held-out reasoning traces and code is 57% lower. On the
-  RTX 3060, kaiLLM runs it 12% faster at batch 1 and 32% faster at batch 8
-  than llama.cpp runs UD-IQ1_M, and prefills 76% faster.
+  RTX 3060, kaiLLM runs it 14% faster at batch 1 and 34% faster at batch 8
+  than llama.cpp runs UD-IQ1_M, and prefills 83% faster. On the RTX Pro 6000,
+  it is 3% slower at batch 1, but 84% faster at batch 8, 132% faster at
+  batch 16, and it prefills 54% faster.
+- DSpine speculative decoding with `--dspine`, one sequence at a time:
+  kaiLLM serves a DSpine drafter next to a Qwen3.8 27B GGUF. The chimachima
+  repository has a 4-bit copy of Tencent's drafter, and a drafter in Tencent's
+  own format is converted once to the same 4-bit weights. In a chat with
+  thinking, it makes the Q2_K_XXS checkpoint 1.85× faster on the RTX Pro 6000
+  and 1.92× faster on the RTX 3060. On GPUs with 16 GB or less, `--dspine`
+  defaults to a 1 GiB KV cache and 512-token prefill chunks: with the larger
+  defaults, the server went past 12 GB and WSL paged GPU memory to system RAM.
 - The installer now works from a clone of the repository: it imported the
   clone's kaillm folder instead of the installed package and failed at its
   last step.
-- MTP speculative decoding now uses the verification paths from my speculative
-  decoding work: split-KV attention sized for each verification length, and
-  vLLM's fused GDN path up to 16 tokens. I didn't measure the 0.1.0rc4 MTP
-  figures again with this release.
+- MTP speculative decoding now uses the same verification paths as DSpine:
+  split-KV attention sized for each verification length, and vLLM's fused GDN
+  path up to 16 tokens. I didn't measure the 0.1.0rc4 MTP figures again with
+  this release.
+- unsloth's UD-IQ1_M runs, but kaiLLM's kernels for the IQ1_M and IQ2 formats
+  aren't optimized yet: llama.cpp is much faster with it.
 
 # kaiLLM 0.1.0rc4
 

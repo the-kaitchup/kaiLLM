@@ -38,6 +38,10 @@ class GGUFConfigParser(ConfigParserBase):
             code_revision=code_revision,
             **kwargs,
         )
+        if not is_gguf(original_model) and getattr(config, "dflash_config", None) is not None:
+            # An HF draft checkpoint (DFlash / DSpine) next to a GGUF target inherits the target's config
+            # format; it keeps its own architectures (the causal-LM mapping below would drop the draft head).
+            return config_dict, config
 
         if config.model_type == "qwen3_moe" and "norm_topk_prob" not in config_dict:
             config_dict["norm_topk_prob"] = True

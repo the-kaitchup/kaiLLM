@@ -44,7 +44,7 @@ llama.cpp and other GGUF runtimes can't load them.
 
 | Model | Checkpoints | Format |
 |---|---|---|
-| [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) | UD-Q4_K_XL and UD-Q2_K_XL |   GGUF tensors, with the MTP layer |
+| [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) | UD-Q4_K_XL, UD-Q2_K_XL and UD-IQ1_M |   GGUF tensors, with the MTP layer except UD-IQ1_M |
 | [kaitchup/Qwen3.8-27B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-chimachima-kaiPTQ) | Q2_K_XXS (6.7 GB) | kaiPTQ (mixed ITQ and GGUF tensors), without the MTP layer |
 
 In this release, Qwen3.5 and Qwen3.8 GGUFs only run on Blackwell GPUs (compute
@@ -124,6 +124,22 @@ Without `--spec-tokens`, kaiLLM picks a default from the serving capacity:
   fewer up to 8, no speculation above.
 - Qwen3.5 and Qwen3.8 GGUFs without MTP layers: no speculation.
 
+Qwen3.8 27B can also draft with DSpine, a separate drafter, with one sequence
+at a time for now. `--dspine` takes a local directory, a Hugging Face
+repository, or a folder of a repository. The chimachima repository has a 4-bit
+copy of Tencent's DSpine drafter:
+
+```bash
+kaillm serve kaitchup/Qwen3.8-27B-chimachima-kaiPTQ:Qwen3.8-27B-chimachima-Q2_K_XXS.gguf --max-num-seqs 1 \
+  --dspine kaitchup/Qwen3.8-27B-chimachima-kaiPTQ:dspine-b16-int4
+```
+
+`--spec-tokens` sets the number of draft tokens, 7 by default. Tencent's
+original drafter, `tencent/Qwen3.8-27B-DSpine-b16`, is converted once to the
+same 4-bit format. On GPUs with 16 GB or less, `--dspine` defaults to a 1 GiB
+KV cache and 512-token prefill chunks, which keep an 8,192-token context next
+to the drafter on a 12 GB RTX 3060.
+
 Send a request:
 
 ```bash
@@ -154,6 +170,9 @@ Without speculative decoding:
 |---|---:|---:|---:|---:|---:|
 | UD-Q4_K_XL | 67.8 / 66.4 (**+2.1%**) | 122.6 / 116.8 (**+5.0%**) | 344.0 / 260.8 (**+31.9%**) | 502.3 / 353.3 (**+42.2%**) | 4,736 / 3,198 (**+48.1%**) |
 | UD-Q2_K_XL | 94.8 / 92.7 (**+2.3%**) | 162.6 / 153.8 (**+5.7%**) | 355.5 / 273.9 (**+29.8%**) | 508.1 / 353.0 (**+43.9%**) | 4,466 / 3,001 (**+48.8%**) |
+| UD-IQ1_M | 81.4 / 109.2 (-25.5%) | 115.0 / 172.4 (-33.3%) | 168.5 / 287.2 (-41.3%) | 138.6 / 333.9 (-58.5%) | 549 / 3,091 (-82.2%) |
+
+UD-IQ1_M was measured with kaiLLM 0.1.0rc5. kaiLLM's kernels for the IQ1_M and IQ2 formats aren't optimized yet: llama.cpp is much faster with this file.
 
 
 With MTP speculative decoding, each engine at its best draft length (2, 3 or 4) for each batch size:
@@ -188,11 +207,14 @@ llama.cpp can't run kaiPTQ checkpoints, so the baseline is LiquidAI's Q4_K_M GGU
 
 ### Qwen3.8 27B kaiPTQ (kaiLLM) vs UD-IQ1_M (llama.cpp)
 
-llama.cpp can't run kaiPTQ checkpoints, so the baseline is unsloth's UD-IQ1_M GGUF, which has the same file size. Measured with kaiLLM 0.1.0rc5. To fit in 12 GB next to the desktop, both engines served 16 sequences with a shorter context than in the other tables. Each figure is the median of 3 to 5 runs.
+llama.cpp can't run kaiPTQ checkpoints, so the baseline is unsloth's UD-IQ1_M GGUF, which has the same file size. Measured with kaiLLM 0.1.0rc5. On the RTX 3060, both engines served 16 sequences with a shorter context than in the other tables, to fit in 12 GB next to the desktop. Each figure is the median of 3 to 5 runs.
 
 | GPU | Checkpoint | Batch 1 | Batch 2 | Batch 8 | Batch 16 | Prefill |
 |---|---|---:|---:|---:|---:|---:|
-| RTX 3060 | chimachima Q2_K_XXS / UD-IQ1_M | 26.4 / 23.5 (**+12.3%**) | 37.8 / 34.6 (**+9.2%**) | 68.6 / 51.9 (**+32.2%**) | 68.5 / 70.8 (-3.2%) | 929 / 527 (**+76.3%**) |
+| RTX 3060 | chimachima Q2_K_XXS / UD-IQ1_M | 26.7 / 23.5 (**+13.6%**) | 37.9 / 34.6 (**+9.5%**) | 69.7 / 51.9 (**+34.3%**) | 68.3 / 70.8 (-3.5%) | 966 / 527 (**+83.3%**) |
+| RTX Pro 6000 | chimachima Q2_K_XXS / UD-IQ1_M | 106.3 / 109.2 (-2.7%) | 184.4 / 172.4 (**+7.0%**) | 528.6 / 287.2 (**+84.1%**) | 774.5 / 333.9 (**+132.0%**) | 4,772 / 3,091 (**+54.4%**) |
+
+With DSpine (`--dspine`, one sequence), in a chat with thinking enabled (temperature 1.0, top-p 0.95, top-k 20; 16 everyday prompts of up to 1,024 generated tokens), kaiLLM generates the chimachima checkpoint's tokens 1.85× faster on the RTX Pro 6000 (207.8 instead of 112.1 tokens/s) and 1.92× faster on the RTX 3060 (52.3 instead of 27.2 tokens/s).
 
 ### suisui: kaiLLM vs llama.cpp (same GGUF)
 
@@ -295,6 +317,7 @@ a subset of that format coverage.
 - Broader model support, and Qwen3.5/Qwen3.8 GGUFs on Ampere GPUs (RTX 3060, RTX 3090, A40).
 - RTX 5080 and RTX 3090 qualification and optimization.
 - More native paths for kaiPTQ checkpoints and better concurrency.
+- DSpine with several concurrent sequences, and faster kernels for the IQ1_M and IQ2 formats.
 
 ## License and acknowledgments
 

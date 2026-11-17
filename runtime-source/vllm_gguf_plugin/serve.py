@@ -66,6 +66,13 @@ def parser():
         help="vLLM speculative config to use instead of the GGUF's default drafts (e.g. a DSpine / dflash drafter)",
     )
     result.add_argument(
+        "--dspine", metavar="DRAFTER",
+        help="DSpine speculative decoding, with --max-num-seqs 1: a local drafter directory, a Hugging Face repository, "
+             "or REPOSITORY:FOLDER (e.g. kaitchup/Qwen3.8-27B-chimachima-kaiPTQ:dspine-b16-int4); a drafter in "
+             "Tencent's format is converted once to 4-bit layers (dspine/prepare.py); --spec-tokens sets the draft "
+             "tokens per step (default 7)",
+    )
+    result.add_argument(
         "--catalog", type=Path,
         default=Path(__file__).parent / "native/serving-catalog.json",
     )
@@ -80,6 +87,25 @@ def parser():
     return result
 
 
+def dspine_speculative_config(args):
+    """--dspine: vLLM's DFlash method with a DSpine drafter prepared by dspine/prepare.py (not during a dry run)."""
+    if getattr(args, "speculative_config", None):
+        raise ValueError("Use either --dspine or --speculative-config")
+    if args.max_num_seqs != 1:
+        raise ValueError("--dspine needs --max-num-seqs 1 in this release")
+    tokens = 7 if args.spec_tokens is None else args.spec_tokens
+    from .dspine.prepare import resolve
+
+    drafter = resolve(args.dspine, prepare=not getattr(args, "dry_run", False))
+    config = drafter / "config.json"
+    block = json.loads(config.read_text()).get("block_size", 16) if config.is_file() else 16
+    if not 1 <= tokens < block:
+        raise ValueError(f"--dspine drafts 1 to {block - 1} tokens per step with this drafter (--spec-tokens)")
+    spec = {"method": "dflash", "model": str(drafter), "num_speculative_tokens": tokens,
+            "draft_load_config": {"load_format": "auto"}, "quantization": "gptq_marlin"}
+    return spec, tokens
+
+
 def prepare_command(args, selected, executable=sys.executable, family=None):
     """Build CLI arguments without importing the model runtime.
 
@@ -91,7 +117,9 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         raise ValueError("Require memory utilization in (0,1] and a valid port")
     family = family or {}
     speculation = family.get("speculation", "ngram")
-    if speculation == "mtp":
+    if getattr(args, "dspine", None):
+        spec, tokens = dspine_speculative_config(args)
+    elif speculation == "mtp":
         tokens = policy.choose_mtp_tokens(args.max_num_seqs)
         if args.spec_tokens is not None:
             tokens = args.spec_tokens
@@ -155,6 +183,12 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         command += [str(x) for x in json.loads(args.extra_vllm_args)]
     environment = dict(selected["environment"])
     environment.update(family.get("environment", {}))
+    if getattr(args, "dspine", None):
+        # The paths of the DSpine measurements, unless set: one GDN state per request with the deferred commit
+        # kernel, CUDA split-KV verification attention, and KV groups sized for the drafter's layers.
+        environment.setdefault("KAILLM_GDN_SINGLE_SLOT", "1")
+        environment.setdefault("KAILLM_VERIFY_ATTN_CUDA", "1")
+        environment.setdefault("KAILLM_KV_GROUPS", "auto")
     if args.device is not None:
         environment["CUDA_VISIBLE_DEVICES"] = args.device
     if args.cpu_cache_dir is not None:
