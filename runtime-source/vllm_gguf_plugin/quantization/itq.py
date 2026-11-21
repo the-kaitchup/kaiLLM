@@ -20,7 +20,7 @@ from ..native.cuda_architecture import bind_library_architecture, device_archite
 from .yaqa_cuda import build_cuda_library
 
 SOURCE = Path(__file__).parents[1] / "native/kernels/itq_kernels.cu"
-BUILD_CONTRACT = "sm86-itq-v1-dp4a-gemv-prep-post-decode-vocab-bps12-r6-addnorm"
+BUILD_CONTRACT = "sm86-itq-v1-dp4a-gemv-prep-post-decode-vocab-bps12-r6-addnorm-v2b8"
 _LIBRARIES: dict = {}
 MAX_DECODE_ROWS = 16          # dp4a decode kernels (and the vocabulary head's classes)
 MAX_MMA_ROWS = 64             # tensor-core decode GEMVs (sm_80+, ITQ_MMA != 0): MTP verification and larger batches
@@ -201,7 +201,8 @@ class PackedITQLinear(torch.nn.Module):
         self.shape = (m, n)
         self.V = int(fmt[0])
         step_bits = int(descriptor["bps"])
-        # kernel format code (itq_kernels.cu fmt_*): V4 = bits per step (4-12), V2 = 32 + bits per step (35-38)
+        # kernel format code (itq_kernels.cu fmt_*): V4 = bits per step (4-12), V2 = 32 + bits per step (35-40;
+        # 39 / 40 = 3.5 / 4 bits per weight)
         self.bps = step_bits if self.V == 4 else 32 + step_bits
         self.table_bits = int(fmt[1])
         self.block_in = block_size(descriptor["rotation_in"], n)

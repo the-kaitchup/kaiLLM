@@ -70,7 +70,7 @@ def validate_yaqa_descriptor(descriptor, tensor_names=None):
             or descriptor.get("hash") != "mul"
             or descriptor.get("layout") != "tile16-rowmajor-steps-lsb"
             or type(bps) is not int
-            or bps not in (range(4, 13) if fmt[1] == 4 else range(3, 7))
+            or bps not in (range(4, 13) if fmt[1] == 4 else range(3, 9))     # V2: 3 to 8 bits per step
             or any(n % 16 for n in shape)
             or shape[1] % 32
         ):

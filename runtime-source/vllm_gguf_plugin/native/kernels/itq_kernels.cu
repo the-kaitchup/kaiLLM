@@ -105,8 +105,9 @@ __device__ __forceinline__ size_t pm_scale(int b, int c, int nb) { return size_t
 
 // ---- trellis formats: the BPS template parameter of the decode kernels ---------------------------------------------
 // BPS 4..12: "V4", four weights per step (32-bit entries of a 12-bit table), BPS bits per step, 64 steps per tile.
-// BPS 32 + b, b = 3..6: "V2" (action 10 of the 2026-11-14 plan), two weights per step (an int8 pair in the low 16 bits of
-// each entry of a 10-bit table), b bits per step, 128 steps per tile: the tile of V4 at BPS 2 b (4 b words, rate b / 2).
+// BPS 32 + b, b = 3..8: "V2", two weights per step (an int8 pair in the low 16 bits of each entry of a 10-bit table),
+// b bits per step (b = 7, 8: 3.5 / 4 bits per weight), 128 steps per tile: the tile of V4 at BPS 2 b (4 b words,
+// rate b / 2).
 // Row r of a tile is steps 8 r .. 8 r + 7 (V4: 4 r .. 4 r + 3); its dp4a word k = the pairs of steps 8 r + 2 k and
 // 8 r + 2 k + 1 (bytes 0-1 and 2-3).  Same 16-bit circular windows, same multiplicative hash.
 __host__ __device__ constexpr bool fmt_v2(int F) { return F >= 32; }
@@ -213,6 +214,16 @@ __host__ __device__ constexpr bool two_words() {
   return true;
 }
 
+// Every lane's eight V2 windows lie in its three words (bits [o, o + 7 b + 16) with o = the lane's offset in its first
+// word): always up to b = 7; at b = 8 every window starts at bit 24 of a word, so o + 72 = 96 exactly.
+template <int BPS>
+__host__ __device__ constexpr bool rows_fit_three_words() {
+  constexpr int B = fmt_step_bits(BPS), SPR = fmt_steps_per_row(BPS), TBITS = 32 * fmt_words(BPS);
+  for (int r = 0; r < 16; ++r)
+    if (((((SPR * r + 1) * B - 16 + TBITS) % TBITS) & 31) + (SPR - 1) * B + 16 > 96) return false;
+  return true;
+}
+
 template <int BPS, int NB>
 __host__ __device__ constexpr bool direct_words() {
   if constexpr (BPS == 8) return NB <= ITQ_DIRECT8_MAX_NB;
@@ -236,8 +247,10 @@ __device__ __forceinline__ int window_start(int r) {
 template <int BPS, bool DIRECT>
 __device__ __forceinline__ TileWords<BPS> tile_words(const uint32_t* __restrict__ tile, int r, bool valid) {
   constexpr int TW = fmt_words(BPS);
-  static_assert((fmt_steps_per_row(BPS) - 1) * fmt_step_bits(BPS) + 16 <= 64,
-                "the aligned 64-bit extraction holds the row's windows only up to 16 (V4) / 6 (V2) bits per step");
+  static_assert(fmt_v2(BPS) ? rows_fit_three_words<BPS>()
+                            : (fmt_steps_per_row(BPS) - 1) * fmt_step_bits(BPS) + 16 <= 64,
+                "V4: the aligned 64-bit extraction holds a row's windows up to 16 bits per step; V2: the 96-bit "
+                "extraction of row_words up to 8");
   TileWords<BPS> t;
   if constexpr (DIRECT && BPS == 8) {        // word r and its circular predecessor (TW = 16 = one word per lane)
     t.w0 = valid ? __ldg(tile + r) : 0u;
@@ -341,13 +354,17 @@ __device__ __forceinline__ void row_words(const TileWords<BPS>& t, int r, int la
         }
       }
     }
-    // x1:x0 = bits [o, o + 64) of the row's words; window k = bits [k B, k B + 16) of it (7 B + 16 <= 64)
+    // x2:x1:x0 = bits [o, o + 96) of the row's words (the third word's tail reads as zeros); window k = bits
+    // [k B, k B + 16) of it: 7 B + 16 <= 64 up to B = 6, 65 / 72 at B = 7 / 8 (rows_fit_three_words: o + 7 B + 16 <= 96)
     const uint32_t x0 = __funnelshift_r(v[0], v[1], o), x1 = __funnelshift_r(v[1], v[2], o);
+    const uint32_t x2 = (7 * B + 16 > 64) ? __funnelshift_r(v[2], 0u, o) : 0u;
     int e[8];
 #pragma unroll
     for (int k = 0; k < 8; ++k) {
       const int s = k * B;
-      const uint32_t win = s + 16 <= 32 ? x0 >> s : s >= 32 ? x1 >> (s - 32) : __funnelshift_r(x0, x1, s);
+      const uint32_t win = s + 16 <= 32 ? x0 >> s
+                         : s + 16 <= 64 ? (s >= 32 ? x1 >> (s - 32) : __funnelshift_r(x0, x1, s))
+                         : s >= 64 ? x2 >> (s - 64) : __funnelshift_r(x1, x2, s - 32);
       e[k] = lut<TB>(table, win & 0xffffu);
     }
 #pragma unroll
@@ -2442,7 +2459,7 @@ extern "C" int itq_gemv(const void* words, const void* table, const void* xq, co
     return launch_gemv_mma<B, fmt_table_bits(B), N, P>(w, t, q, s, o, m, n, ksplit, wscale, blocks, zeroed, stream);
 #define MP(B, N) M(B, N, 1) M(B, N, 2)
 #define MN(B) MP(B, 8) MP(B, 16) MP(B, 32) MP(B, 48) MP(B, 64)
-    MN(4) MN(5) MN(6) MN(7) MN(8) MN(9) MN(10) MN(11) MN(12) MN(35) MN(36) MN(37) MN(38)
+    MN(4) MN(5) MN(6) MN(7) MN(8) MN(9) MN(10) MN(11) MN(12) MN(35) MN(36) MN(37) MN(38) MN(39) MN(40)
 #undef MN
 #undef MP
 #undef M
@@ -2452,7 +2469,7 @@ extern "C" int itq_gemv(const void* words, const void* table, const void* xq, co
     return launch_gemv<B, fmt_table_bits(B), N, P>(w, t, q, s, o, m, n, ksplit, wscale, blocks, zeroed, stream);
 #define GP(B, N) G(B, N, 1) G(B, N, 2) G(B, N, 4)
 #define GN(B) GP(B, 1) GP(B, 2) GP(B, 4) GP(B, 8) GP(B, 16)
-  GN(4) GN(5) GN(6) GN(7) GN(8) GN(9) GN(10) GN(11) GN(12) GN(35) GN(36) GN(37) GN(38)
+  GN(4) GN(5) GN(6) GN(7) GN(8) GN(9) GN(10) GN(11) GN(12) GN(35) GN(36) GN(37) GN(38) GN(39) GN(40)
 #undef GN
 #undef GP
 #undef G
@@ -2679,7 +2696,7 @@ extern "C" int itq_gemv_group(int parts, const void* const* words, void* const* 
 #define M(B, N, P) if (bps == B && nb == N && pf == P) return launch_gemv_group_mma<B, N, P>(g, t, q, s, n, blocks, stream);
 #define MP(B, N) M(B, N, 1) M(B, N, 2)
 #define MN(B) MP(B, 8) MP(B, 16) MP(B, 32) MP(B, 48) MP(B, 64)
-    MN(4) MN(5) MN(6) MN(7) MN(8) MN(9) MN(10) MN(11) MN(12) MN(35) MN(36) MN(37) MN(38)
+    MN(4) MN(5) MN(6) MN(7) MN(8) MN(9) MN(10) MN(11) MN(12) MN(35) MN(36) MN(37) MN(38) MN(39) MN(40)
 #undef MN
 #undef MP
 #undef M
@@ -2688,7 +2705,7 @@ extern "C" int itq_gemv_group(int parts, const void* const* words, void* const* 
 #define G(B, N, P) if (bps == B && nb == N && prefetch == P) return launch_gemv_group<B, N, P>(g, t, q, s, n, blocks, stream);
 #define GP(B, N) G(B, N, 1) G(B, N, 2) G(B, N, 4)
 #define GN(B) GP(B, 1) GP(B, 2) GP(B, 4) GP(B, 8) GP(B, 16)
-  GN(4) GN(5) GN(6) GN(7) GN(8) GN(9) GN(10) GN(11) GN(12) GN(35) GN(36) GN(37) GN(38)
+  GN(4) GN(5) GN(6) GN(7) GN(8) GN(9) GN(10) GN(11) GN(12) GN(35) GN(36) GN(37) GN(38) GN(39) GN(40)
 #undef GN
 #undef GP
 #undef G
@@ -2736,7 +2753,7 @@ extern "C" int itq_decode(const void* words, const void* table, void* w, int m, 
   auto o = reinterpret_cast<__nv_bfloat16*>(w);
 #define D(B) if (bps == B) { itq_decode_kernel<B, fmt_table_bits(B)><<<blocks, 256, (sizeof(int) << fmt_table_bits(B)), \
     stream>>>(ww, t, o, m, n, wscale); return int(cudaGetLastError()); }
-  D(4) D(5) D(6) D(7) D(8) D(9) D(10) D(11) D(12) D(35) D(36) D(37) D(38)
+  D(4) D(5) D(6) D(7) D(8) D(9) D(10) D(11) D(12) D(35) D(36) D(37) D(38) D(39) D(40)
 #undef D
   return int(cudaErrorInvalidValue);
 }
@@ -2754,7 +2771,7 @@ extern "C" int itq_decode_i8(const void* words, const void* table, void* w, int 
   auto o = reinterpret_cast<int8_t*>(w);
 #define D(B) if (bps == B) { itq_decode_i8_kernel<B, fmt_table_bits(B)><<<blocks, 256, (sizeof(int) << fmt_table_bits(B)), \
     stream>>>(ww, t, o, m, n); return int(cudaGetLastError()); }
-  D(4) D(5) D(6) D(7) D(8) D(9) D(10) D(11) D(12) D(35) D(36) D(37) D(38)
+  D(4) D(5) D(6) D(7) D(8) D(9) D(10) D(11) D(12) D(35) D(36) D(37) D(38) D(39) D(40)
 #undef D
   return int(cudaErrorInvalidValue);
 }
