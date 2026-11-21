@@ -3,7 +3,7 @@
 set -euo pipefail
 
 kaillm_release_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
-kaillm_prefix="${KAILLM_INSTALL_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/kaillm/0.1.0rc5}"
+kaillm_prefix="${KAILLM_INSTALL_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/kaillm/0.1.0rc6}"
 kaillm_bin_dir="${KAILLM_BIN_DIR:-$HOME/.local/bin}"
 if [[ $# -gt 0 ]]; then
   if [[ $# -ne 2 || $1 != --prefix ]]; then
@@ -41,7 +41,7 @@ if [[ -e $kaillm_prefix && ! -f $kaillm_prefix/.kaillm-installation ]]; then
 fi
 mkdir -p -- "$kaillm_prefix"
 kaillm_prefix=$(CDPATH= cd -- "$kaillm_prefix" && pwd)
-printf '%s\n' 'kaiLLM 0.1.0rc5' > "$kaillm_prefix/.kaillm-installation"
+printf '%s\n' 'kaiLLM 0.1.0rc6' > "$kaillm_prefix/.kaillm-installation"
 if [[ ! -x $kaillm_prefix/venv/bin/python ]]; then
   "$kaillm_uv" venv --python 3.12 "$kaillm_prefix/venv"
 fi

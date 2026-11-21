@@ -1,6 +1,6 @@
 {
-  "version": "0.1.0rc5",
-  "directory": "kaiLLM-0.1.0rc5-linux-x86_64",
-  "sha256": "461da07553cdc63a85b60ea3ea75cdc76bcbea5e9c2078506091d507aa0feb73",
-  "url": "https://github.com/the-kaitchup/kaiLLM/releases/download/v0.1.0rc5/kaiLLM-0.1.0rc5-linux-x86_64.tar.gz"
+  "version": "0.1.0rc6",
+  "directory": "kaiLLM-0.1.0rc6-linux-x86_64",
+  "sha256": "84cfbe974004c0822bc905c970357d742693a40beba6f0ea046cc414a8400875",
+  "url": "https://github.com/the-kaitchup/kaiLLM/releases/download/v0.1.0rc6/kaiLLM-0.1.0rc6-linux-x86_64.tar.gz"
 }

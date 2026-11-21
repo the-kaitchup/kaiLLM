@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kaillm"
-version = "0.1.0rc5"
+version = "0.1.0rc6"
 description = "Batched GGUF and mixed YAQA/GGUF serving built on vLLM"
 readme = "README.md"
 license = "Apache-2.0"

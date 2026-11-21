@@ -33,7 +33,7 @@ Qwen3.5 and Qwen3.8) might work too, but I haven't tested them.
 | Model | Checkpoints | Format |
 |---|---|---|
 | [kaitchup/LFM3-1.7B-suisui-GGUF](https://huggingface.co/kaitchup/LFM3-1.7B-suisui-GGUF) | 1.00, 1.25 and 1.50 GB | Mixed GGUF tensors |
-| [kaitchup/LFM3-1.7B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/LFM3-1.7B-chimachima-kaiPTQ) | 500, 750, 1000, 1250 and 1500 MB tiers | kaiPTQ (mixed YAQA and GGUF tensors) |
+| [kaitchup/LFM3-1.7B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/LFM3-1.7B-chimachima-kaiPTQ) | 500, 750, 1000, 1250 and 1500 MB tiers | kaiPTQ (mixed ITQ, QTIP and GGUF tensors) |
 | [LiquidAI/LFM3-1.7B-GGUF](https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF) | QAD-Q4_0 and Q8_0 | GGUF tensors |
 | [AtomicChat/LFM3-1.7B-GGUF](https://huggingface.co/AtomicChat/LFM3-1.7B-GGUF) | AD-IQ3_S, AD-Q5_K_M and AD-Q6_K |   GGUF tensors |
 
@@ -45,7 +45,7 @@ llama.cpp and other GGUF runtimes can't load them.
 | Model | Checkpoints | Format |
 |---|---|---|
 | [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) | UD-Q4_K_XL, UD-Q2_K_XL and UD-IQ1_M |   GGUF tensors, with the MTP layer except UD-IQ1_M |
-| [kaitchup/Qwen3.8-27B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-chimachima-kaiPTQ) | Q2_K_XXS (6.7 GB) | kaiPTQ (mixed ITQ and GGUF tensors), without the MTP layer |
+| [kaitchup/Qwen3.8-27B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-chimachima-kaiPTQ) | Q2_K_XXS (6.7 GB) and Q2_K_XS (8.6 GB) | kaiPTQ (mixed ITQ and GGUF tensors), without the MTP layer |
 
 In this release, Qwen3.5 and Qwen3.8 GGUFs only run on Blackwell GPUs (compute
 capability 12.0). The Qwen3.8 chimachima checkpoint also runs on the RTX 3060.
@@ -55,7 +55,7 @@ capability 12.0). The Qwen3.8 chimachima checkpoint also runs on the RTX 3060.
 Requirements: Linux + CUDA 13.
 
 ```bash
-git clone --branch rc5 https://github.com/the-kaitchup/kaiLLM.git
+git clone --branch rc6 https://github.com/the-kaitchup/kaiLLM.git
 cd kaiLLM
 bash install.sh
 ```
@@ -185,7 +185,7 @@ With MTP speculative decoding, each engine at its best draft length (2, 3 or 4) 
 
 ### chimachima kaiPTQ (kaiLLM) vs LiquidAI Q4_K_M (llama.cpp)
 
-llama.cpp can't run kaiPTQ checkpoints, so the baseline is LiquidAI's Q4_K_M GGUF.
+llama.cpp can't run kaiPTQ checkpoints, so the baseline is LiquidAI's Q4_K_M GGUF. These rows were measured with kaiLLM 0.1.0rc4 and the first versions of the 500 MB, 750 MB and 1000 MB checkpoints.
 
 | GPU | Checkpoint | Batch 1 | Batch 8 | Batch 16 | Prefill |
 |---|---|---:|---:|---:|---:|
@@ -301,8 +301,8 @@ capacity. Performance at other models, batches and GPUs still needs testing.
 
 - Load GGUF files directly, including mixed tensor formats.
 - Load kaiPTQ checkpoints, which combine GGUF and YAQA tensors in one file.
-- Load Qwen3.8 kaiPTQ checkpoints with ITQ tensors: trellis codes with an
-  integer decode table, from 1.25 to 3 bits per weight.
+- Load LFM3 and Qwen3.8 kaiPTQ checkpoints with ITQ tensors: trellis codes
+  with an integer decode table, from 1.25 to 4 bits per weight.
 - Support K-quants, IQ formats and YAQA QTIP bit widths, with fallback paths
   for formats without an optimized native kernel.
 - Use separate prefill and decode paths, CUDA graphs and automatic hardware

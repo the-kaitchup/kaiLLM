@@ -1,3 +1,15 @@
+# kaiLLM 0.1.0rc6
+
+ITQ tensors at 3.5 and 4 bits per weight, for the v2.0 LFM3 chimachima checkpoints.
+
+- kaiPTQ checkpoints can now contain ITQ tensors at 3.5 and 4 bits per weight:
+  2 weights per step, at 7 or 8 bits per step. The v2.0 750 MB and 1000 MB
+  checkpoints in
+  [kaitchup/LFM3-1.7B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/LFM3-1.7B-chimachima-kaiPTQ)
+  use them and need this release. The kernels are prebuilt for compute
+  capability 8.6 and 12.0.
+- Everything else is unchanged from 0.1.0rc5.
+
 # kaiLLM 0.1.0rc5
 
 Qwen3.8 27B kaiPTQ checkpoints, which also run on the RTX 3060, and DSpine speculative decoding.
