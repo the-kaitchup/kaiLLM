@@ -1,0 +1,217 @@
+{
+  "llama_cpp": {
+    "source": "ggml-org/llama.cpp",
+    "revision": "f4f6f2e7db76e98c95cc9b7fc608ea669c806044"
+  },
+  "sources": {
+    "prose": {
+      "url": "https://raw.githubusercontent.com/GITenberg/Moby-Dick--Or-The-Whale_2701/bdf1948e6cd00963730971e5624e764a35f238c3/2701-0.txt",
+      "sha256": "baf9b04fcf6e0008f30eaaa6697277751448c1070b20175e0082f28cbb161fd3",
+      "bytes": 1276201
+    },
+    "code": {
+      "url": "https://raw.githubusercontent.com/python/cpython/60403a5409ff2c3f3b07dd2ca91a7a3e096839c7/Lib/ast.py",
+      "sha256": "3483a6af8b86927c5c98c99de724fef77da5c544f82227ec0eab4f8981783852",
+      "bytes": 65254
+    }
+  },
+  "tokenizers": {
+    "lfm": {
+      "repo": "LiquidAI/LFM3-1.7B",
+      "revision": "1da06bec6a819da10b54c67e5c90972b46d81871"
+    },
+    "daisy": {
+      "repo": "RadixArk/DaisyRose-27B",
+      "revision": "64a4ec665091bb0c1931babce4e97e686eef3c5c"
+    },
+    "qwen": {
+      "repo": "Qwen/Qwen3.8-27B",
+      "revision": "37561816e66b5b9153b1b64c10968c18c1e6f4a0"
+    },
+    "inkling": {
+      "repo": "thinkingmachines/Inkling-2-Mini",
+      "revision": "b85c3cfa615fc413cc9af3379f491b963f3b586a"
+    },
+    "hy4": {
+      "repo": "tencent/Hy4-flash",
+      "revision": "b2498eba6a1a3f9bbcab4190bc1313a3c7010c2f"
+    }
+  },
+  "dspine": {
+    "repo": "tencent/Qwen3.8-27B-DSpine-b16",
+    "revision": "260a6c23070ca873ff1a5f33b7119ac3f6a245ee",
+    "files": {
+      "model.safetensors": {
+        "bytes": 4051831880,
+        "sha256": "ac90f1df842ea66b23e4224f3e86624add547526f689ffe9e9c6b7a5937116b1"
+      },
+      "config.json": {
+        "bytes": 2302,
+        "sha256": "6b7e45dde6e2485c945bbec478c1e82cbd7610ed961f892e21297bb2491effd3"
+      }
+    }
+  },
+  "models": {
+    "lfm-qad": {
+      "family": "lfm",
+      "kind": "ordinary",
+      "repo": "LiquidAI/LFM3-1.7B-GGUF",
+      "revision": "cd0c74c575b5c416f3011b5b4c298077f26ca8c2",
+      "files": {
+        "LFM3-1.7B-QAD-Q4_0.gguf": {
+          "bytes": 1049615680,
+          "sha256": "43a7d09a0e9cba91b63eb7052488b9564569bddfd65754d2e426465e572a7452"
+        }
+      },
+      "speculation": "ngram"
+    },
+    "lfm-chima": {
+      "family": "lfm",
+      "kind": "chimachima",
+      "repo": "kaitchup/LFM3-1.7B-chimachima-kaiPTQ",
+      "revision": "68abaf788a0db495f69843e47292d27b60491265",
+      "files": {
+        "LFM3-1.7B-chimachima-750MB.gguf": {
+          "bytes": 738167968,
+          "sha256": "86359e66e3d3a7515a8c12d92773929ae84f660a4daae056b2ed5d629ad9a44b"
+        }
+      },
+      "speculation": "ngram"
+    },
+    "lfm-suisui": {
+      "family": "lfm",
+      "kind": "suisui",
+      "repo": "kaitchup/LFM3-1.7B-suisui-GGUF",
+      "revision": "6fcfa6348c8399bd436b7ccd8a0c5e6c9dfe765b",
+      "files": {
+        "LFM3-1.7B-suisui-Q4_0_XS.gguf": {
+          "bytes": 1249937152,
+          "sha256": "94e06338bc9f3effdc82b32065d6a97cec763dd5870e37c350a36ed6d37f0ed5"
+        }
+      },
+      "speculation": "ngram"
+    },
+    "daisy-iq2m": {
+      "family": "daisy",
+      "kind": "ordinary",
+      "repo": "bartowski/RadixArk_DaisyRose-27B-GGUF",
+      "revision": "4514fec3c6573951bce8acc7f850d9eb496301c7",
+      "files": {
+        "RadixArk_DaisyRose-27B-IQ2_M.gguf": {
+          "bytes": 10358240064,
+          "sha256": "4af4d35636c67b9a8777868b30f10170d85d1e5519ce17d13080dff115587f30"
+        }
+      },
+      "speculation": "auto-qwen"
+    },
+    "daisy-rco": {
+      "family": "daisy",
+      "kind": "chimachima",
+      "repo": "kaitchup/DaisyRose-27B-chimachima-kaiPTQ",
+      "revision": "6c1a63358c57f5baf2730574ba418195eb7edfa8",
+      "files": {
+        "DaisyRose-27B-chimachima-kaiPTQ-Q2_K_XS.gguf": {
+          "bytes": 8649764608,
+          "sha256": "7e8c69217b5d375c4b339a87a8477dd32de42fdda7a7fdf9fd69cc334813f75c"
+        }
+      },
+      "speculation": "dspine"
+    },
+    "daisy-dondon": {
+      "family": "daisy",
+      "kind": "dondon",
+      "repo": "kaitchup/DaisyRose-27B-dondon-GGUF",
+      "revision": "3592e073925dbdbc65a340fca851fc01b8d2c409",
+      "files": {
+        "DaisyRose-27B-dondon-IQ2_M.gguf": {
+          "bytes": 10358245568,
+          "sha256": "d44d10c1029c9652ecc4d1c169929c106134303070dce35c0fbc29ae1ecd4554"
+        }
+      },
+      "speculation": "dspine"
+    },
+    "qwen-udq2": {
+      "family": "qwen",
+      "kind": "ordinary",
+      "repo": "unsloth/Qwen3.8-27B-GGUF",
+      "revision": "4af51b3542f775b0a8e4b310bfb3f17e01c306c9",
+      "files": {
+        "Qwen3.8-27B-UD-Q2_K_XL.gguf": {
+          "bytes": 9948666784,
+          "sha256": "18f1187f38e7994b05c08cb45c674b90b7f17523687c83a4614fe493f7ea739d"
+        }
+      },
+      "speculation": "mtp"
+    },
+    "qwen-chima": {
+      "family": "qwen",
+      "kind": "chimachima",
+      "repo": "kaitchup/Qwen3.8-27B-chimachima-kaiPTQ",
+      "revision": "aa5396581a0d09201312c0262dcfa2d0e1871eba",
+      "files": {
+        "Qwen3.8-27B-chimachima-Q2_K_XXS.gguf": {
+          "bytes": 6729115520,
+          "sha256": "07c0eb9055986dc66b87460e9f0bdfb5396a84d7576082e39c53cf386bad29c9"
+        }
+      },
+      "speculation": "dspine"
+    },
+    "inkling-udq2": {
+      "family": "inkling",
+      "kind": "ordinary",
+      "repo": "unsloth/Inkling-2-Mini-GGUF",
+      "revision": "45fd08764f2b0bf16b03a5483a80e5c7aaec8772",
+      "files": {
+        "Inkling-2-Mini-UD-Q2_K_XL.gguf": {
+          "bytes": 9138715328,
+          "sha256": "20292e8142b69535ca88a5d04439d0fdeb4dc698d44c002dca706dcf92901441"
+        }
+      },
+      "speculation": "none"
+    },
+    "hy4-iq2m": {
+      "family": "hy4",
+      "kind": "ordinary",
+      "repo": "Xylolabs/Hy4-flash-GGUF",
+      "revision": "f76cffaca48283433c855a2cc23a554b25d1e5d0",
+      "files": {
+        "Hy4-flash-IQ2_M-E4-00001-of-00002.gguf": {
+          "bytes": 56261000032,
+          "sha256": "2e11f37fab5eec82c525a5b171ea73bcc186098519f256929c9d1bfddd388c87"
+        },
+        "Hy4-flash-IQ2_M-E4-00002-of-00002.gguf": {
+          "bytes": 35640346656,
+          "sha256": "0ac3ea9e6a73a77efd270cb2fbc6453657eb12fb27718a604503c2636d561c95"
+        }
+      },
+      "speculation": "inspect"
+    },
+    "hy4-dondon": {
+      "family": "hy4",
+      "kind": "dondon",
+      "repo": "kaitchup/Hy4-flash-dondon-GGUF",
+      "revision": "ee58ad539c09c0b2b290a06f17c99e638a0db139",
+      "files": {
+        "Hy4-flash-dondon-Q2_K_M-00001-of-00002.gguf": {
+          "bytes": 56261000224,
+          "sha256": "2f304e6bb19046f004e8d08e3d4aa79ad8c9cd275619feb11d8b514411e70653"
+        },
+        "Hy4-flash-dondon-Q2_K_M-00002-of-00002.gguf": {
+          "bytes": 35640346688,
+          "sha256": "c89e1c7767630dffcca8b2fe76611e04f86c2aaf18f1715192241ce9cea48a74"
+        }
+      },
+      "speculation": "inspect"
+    }
+  },
+  "dspark": {
+    "repo": "unsloth/Inkling-2-Mini-GGUF",
+    "revision": "45fd08764f2b0bf16b03a5483a80e5c7aaec8772",
+    "files": {
+      "dspark-Inkling-2-Mini-Q8_0.gguf": {
+        "bytes": 402278560,
+        "sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+      }
+    }
+  }
+}
