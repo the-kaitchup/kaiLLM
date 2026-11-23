@@ -75,12 +75,24 @@ def _patch_engine_args() -> None:
 
                     metadata_path = prepare_lfm3_metadata(gguf_model)
                     metadata_family = "LFM3"
+                if metadata_path is None:
+                    from .hy4_metadata import prepare_hy4_metadata
+
+                    hy4_path = prepare_hy4_metadata(gguf_model)
+                    metadata_path = str(hy4_path) if hy4_path is not None else None
+                    metadata_family = "Hy4"
+                if metadata_path is None:
+                    from .inkling_metadata import prepare_inkling_metadata
+
+                    inkling_path = prepare_inkling_metadata(gguf_model)
+                    metadata_path = str(inkling_path) if inkling_path is not None else None
+                    metadata_family = "Inkling"
             if metadata_path is not None:
                 from .qwen35_defaults import configure_local_qwen35_defaults
 
                 if metadata_family == "Qwen3.5":
                     configure_local_qwen35_defaults(self)
-                else:
+                elif metadata_family == "LFM3":
                     configure_local_qwen35_defaults(self, model_family="LFM3")
                 if self.hf_config_path is None:
                     self.hf_config_path = metadata_path
@@ -396,9 +408,13 @@ def _register_omni_diffusion_quantization() -> None:
 
 def register() -> None:
     """Register the out-of-tree GGUF integration."""
+    from .hy4_registration import register_hy4
+    from .inkling_registration import register_inkling
     from .lfm3_registration import register_lfm3
 
     register_lfm3()
+    register_hy4()
+    register_inkling()
     register_quantization_config("gguf")(GGUFConfig)
     _register_omni_diffusion_quantization()
 
@@ -422,3 +438,22 @@ def register() -> None:
     _patch_speculator_probe()
     _patch_mtp_draft_config()
     _patch_diffusers_loader()
+    from .spec_attention import install as install_spec_attention
+
+    install_spec_attention()
+
+    from .gdn_spec import install as install_gdn_spec
+
+    install_gdn_spec()
+
+    from .kv_groups import install as install_kv_groups
+
+    install_kv_groups()
+
+    from .memlog import install as install_memlog
+
+    install_memlog()
+
+    from .tq_spec import install as install_tq_spec
+
+    install_tq_spec()

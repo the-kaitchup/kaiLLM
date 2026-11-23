@@ -10,10 +10,12 @@ def get_weights_adapter(config) -> BaseGGUFWeightsAdapter:
     """Return the adapter for *config*, falling back to the default."""
     from .default import GGUFWeightsAdapter
     from .gemma3 import Gemma3GGUFAdapter
+    from .hy4 import Hy4GGUFAdapter
+    from .inkling import InklingGGUFAdapter
     from .lfm3 import Lfm3GGUFAdapter
     from .qwen35 import Qwen35GGUFAdapter
 
-    for cls in (Qwen35GGUFAdapter, Lfm3GGUFAdapter, Gemma3GGUFAdapter):
+    for cls in (Qwen35GGUFAdapter, Lfm3GGUFAdapter, Hy4GGUFAdapter, InklingGGUFAdapter, Gemma3GGUFAdapter):
         if cls.matches(config):
             return cls(config)
     return GGUFWeightsAdapter(config)

@@ -96,7 +96,11 @@ def register():
     _register_environment_variables()
     from .plugin import register as register_plugin
 
-    return register_plugin()
+    result = register_plugin()
+    from .dspine import register_dspine
+
+    register_dspine()
+    return result
 
 
 def __getattr__(name):

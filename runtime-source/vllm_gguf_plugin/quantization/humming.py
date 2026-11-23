@@ -8,6 +8,7 @@ Activations remain FP16/BF16; no activation quantization is introduced here.
 
 import importlib.metadata
 import json
+import os
 
 import numpy as np
 import torch
@@ -188,7 +189,11 @@ def prepare_gguf_humming(
             {
                 "gemm_type": "dense",
                 "use_f16_accum": False,
-                "use_batch_invariant": envs.VLLM_BATCH_INVARIANT,
+                # KAILLM_HUMMING_DETERMINISTIC=1: Humming's batch-invariant schedules for these GEMMs only (no
+                # Stream-K, whose epilogue adds >3 partial slices with BF16 atomics in arbitrary order; one warp-K
+                # tile), without vLLM's global batch-invariant mode
+                "use_batch_invariant": envs.VLLM_BATCH_INVARIANT
+                or os.environ.get("KAILLM_HUMMING_DETERMINISTIC", "0") == "1",
             }
         ),
     )

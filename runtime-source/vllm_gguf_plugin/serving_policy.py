@@ -57,6 +57,10 @@ def capture_family(capacity, spec_tokens, scheduler_tokens, tile=64):
     decode, count = {maximum}, 1
     while count <= maximum:
         decode.add(count)
+        # The runner rounds each size up to a multiple of the verification length (spec + 1) for its FULL
+        # uniform-decode graphs: without (spec + 1) * 2^k, 8 requests x 3 rows ran in the 33-row graph.
+        if count * (spec_tokens + 1) <= maximum:
+            decode.add(count * (spec_tokens + 1))
         count *= 2
     return sorted(
         decode | set(range(2 * tile, scheduler_tokens + 1, tile)) | {scheduler_tokens}

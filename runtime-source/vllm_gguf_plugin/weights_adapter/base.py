@@ -22,6 +22,12 @@ class GGUFLoadSpec:
     # GGUF tensor name -> int64 index: loaded rows/columns = stored[index].
     gguf_row_permutations: dict[str, torch.Tensor] | None = None
     gguf_column_permutations: dict[str, torch.Tensor] | None = None
+    # The model maps only part of the file (e.g. an MTP drafter): yaqa.manifest matrices outside
+    # gguf_to_hf_name_map belong to the other model and are skipped instead of rejected.
+    yaqa_subset: bool = False
+    # None: compact GGUF when a yaqa.manifest exists (Qwen / LFM3 kaiPTQ); False keeps ordinary GGML tensors on the
+    # GGUF methods (Inkling: ITQ experts and ITQ linears beside any GGML type, per tensor)
+    compact_gguf: bool | None = None
 
 
 class BaseGGUFWeightsAdapter(ABC):

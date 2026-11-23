@@ -35,7 +35,8 @@ def _apply_gguf_embedding(
 ) -> torch.Tensor:
     if qweight_type in UNQUANTIZED_TYPES:
         return torch.embedding(qweight, x)
-    if qweight_type in DEQUANT_TYPES:
+    from ..inkling.ggml_types import NEW_TYPES
+    if qweight_type in DEQUANT_TYPES or qweight_type in NEW_TYPES:
         block_size, type_size = gguf.GGML_QUANT_SIZES[qweight_type]
         x_flat = x.flatten()
         assert hidden_size == qweight.shape[1] // type_size * block_size

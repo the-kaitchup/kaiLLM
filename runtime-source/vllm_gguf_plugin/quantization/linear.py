@@ -37,6 +37,9 @@ from .utils import (
 logger = init_logger("vllm.gguf.linear")
 
 
+from ..inkling.ggml_types import NEW_TYPES as _NEW_TYPES  # noqa: E402  (MXFP4 / NVFP4 / Q1_0 / Q2_0: dequant path)
+
+
 def _fused_mul_mat_gguf(
     x: torch.Tensor, qweight: torch.Tensor, qweight_type: int
 ) -> torch.Tensor:
@@ -52,7 +55,7 @@ def _fused_mul_mat_gguf(
         y = ops.ggml_mul_mat_vec_a8(qweight, x, qweight_type, qweight.shape[0])
     elif qweight_type in MMQ_QUANT_TYPES:
         y = ops.ggml_mul_mat_a8(qweight, x, qweight_type, qweight.shape[0])
-    elif qweight_type in DEQUANT_TYPES:
+    elif qweight_type in DEQUANT_TYPES or qweight_type in _NEW_TYPES:
         block_size, type_size = gguf.GGML_QUANT_SIZES[qweight_type]
         shape = (qweight.shape[0], qweight.shape[1] // type_size * block_size)
         weight = ops.ggml_dequantize(qweight, qweight_type, *shape, x.dtype)

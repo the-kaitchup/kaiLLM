@@ -45,6 +45,34 @@ def parser():
     result.add_argument("--device", help="CUDA_VISIBLE_DEVICES selection")
     result.add_argument("--cpu-cache-dir")
     result.add_argument(
+        "--cpu-fit", metavar="CONTEXT",
+        help="Fit CONTEXT tokens (e.g. 32768, 128k, max) by enabling lossless memory measures one at a time, "
+             "including lookup tables in pinned host memory; without it everything stays on the GPU (see cpu_fit.py)",
+    )
+    result.add_argument(
+        "--kv-cache-dtype", default="auto",
+        help="KV-cache dtype (vLLM names, e.g. turboquant_k8v4 / turboquant_4bit_nc: changes outputs, opt-in only)",
+    )
+    result.add_argument(
+        "--kv-cache-dtype-skip-layers", metavar="LIST",
+        help="comma-separated layer indices or attention types kept at the model dtype (e.g. sliding_window)",
+    )
+    result.add_argument(
+        "--extra-vllm-args", metavar="JSON",
+        help='raw vLLM arguments appended to the command, as a JSON list (e.g. ["--reasoning-parser", "qwen3"])',
+    )
+    result.add_argument(
+        "--speculative-config", metavar="JSON",
+        help="vLLM speculative config to use instead of the GGUF's default drafts (e.g. a DSpine / dflash drafter)",
+    )
+    result.add_argument(
+        "--dspine", metavar="DRAFTER",
+        help="DSpine speculative decoding, with --max-num-seqs 1: a local drafter directory, a Hugging Face repository, "
+             "or REPOSITORY:FOLDER (e.g. kaitchup/Qwen3.8-27B-chimachima-kaiPTQ:dspine-b16-int4); a drafter in "
+             "Tencent's format is converted once to 4-bit layers (dspine/prepare.py); --spec-tokens sets the draft "
+             "tokens per step (default 7)",
+    )
+    result.add_argument(
         "--catalog", type=Path,
         default=Path(__file__).parent / "native/serving-catalog.json",
     )
@@ -59,6 +87,25 @@ def parser():
     return result
 
 
+def dspine_speculative_config(args):
+    """--dspine: vLLM's DFlash method with a DSpine drafter prepared by dspine/prepare.py (not during a dry run)."""
+    if getattr(args, "speculative_config", None):
+        raise ValueError("Use either --dspine or --speculative-config")
+    if args.max_num_seqs != 1:
+        raise ValueError("--dspine needs --max-num-seqs 1 in this release")
+    tokens = 7 if args.spec_tokens is None else args.spec_tokens
+    from .dspine.prepare import resolve
+
+    drafter = resolve(args.dspine, prepare=not getattr(args, "dry_run", False))
+    config = drafter / "config.json"
+    block = json.loads(config.read_text()).get("block_size", 16) if config.is_file() else 16
+    if not 1 <= tokens < block:
+        raise ValueError(f"--dspine drafts 1 to {block - 1} tokens per step with this drafter (--spec-tokens)")
+    spec = {"method": "dflash", "model": str(drafter), "num_speculative_tokens": tokens,
+            "draft_load_config": {"load_format": "auto"}, "quantization": "gptq_marlin"}
+    return spec, tokens
+
+
 def prepare_command(args, selected, executable=sys.executable, family=None):
     """Build CLI arguments without importing the model runtime.
 
@@ -70,7 +117,9 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         raise ValueError("Require memory utilization in (0,1] and a valid port")
     family = family or {}
     speculation = family.get("speculation", "ngram")
-    if speculation == "mtp":
+    if getattr(args, "dspine", None):
+        spec, tokens = dspine_speculative_config(args)
+    elif speculation == "mtp":
         tokens = policy.choose_mtp_tokens(args.max_num_seqs)
         if args.spec_tokens is not None:
             tokens = args.spec_tokens
@@ -86,11 +135,25 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         spec = policy.speculative_config(
             tokens, selected["conditional_adapter"], args.lookup_min, args.lookup_max
         )
+    if getattr(args, "speculative_config", None):
+        spec = json.loads(args.speculative_config)
+        tokens = int(spec.get("num_speculative_tokens", tokens))
     captures = policy.capture_family(
         args.max_num_seqs, tokens, args.max_num_batched_tokens
     )
+    # families whose attention replays decode batches only (FULL_DECODE_ONLY): prefill and mixed steps run eagerly
+    graph_mode = family.get("cudagraph_mode", "FULL_AND_PIECEWISE")
+    prefill_graphs = os.getenv("KAILLM_PREFILL_GRAPHS", "1") != "0" and graph_mode != "FULL_DECODE_ONLY"
+    if not prefill_graphs:
+        # decode / verification graphs only: prefill chunks run eagerly (their graphs hold the largest activation
+        # pool; ~1 % of a chunk's time on an RTX 3060), which leaves that memory to the KV cache
+        rows = args.max_num_seqs * (tokens + 1)
+        captures = [c for c in captures if c <= 2 * rows] or [rows]
+        if graph_mode == "FULL_DECODE_ONLY":
+            # decode graphs only: finer sizes (a step runs in the next captured size, padded rows cost MoE reads)
+            captures = sorted({c for c in range(1, min(rows, 8) + 1)} | set(range(8, rows + 1, 4)) | {rows})
     graph = {
-        "mode": 0, "cudagraph_mode": "FULL_AND_PIECEWISE",
+        "mode": 0, "cudagraph_mode": graph_mode,
         "cudagraph_capture_sizes": captures,
         "max_cudagraph_capture_size": max(captures),
     }
@@ -98,16 +161,18 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         executable, "-m", "vllm.entrypoints.cli.main", "serve", args.model,
         "--host", args.host, "--port", str(args.port),
         "--quantization", "gguf", "--load-format", "gguf", "--dtype", "bfloat16",
-        "--attention-config", json.dumps({"backend": "TRITON_ATTN"}),
-        "--kv-cache-dtype", "auto", "--mamba-cache-dtype", "auto",
+        *(() if str(getattr(args, "kv_cache_dtype", "auto")).startswith(("turboquant_", "ultraquant_"))
+          else ("--attention-config", json.dumps({"backend": "TRITON_ATTN"}))),   # packed KV: vLLM picks its backend
+        "--kv-cache-dtype", getattr(args, "kv_cache_dtype", "auto") or "auto", "--mamba-cache-dtype", "auto",
         "--max-num-seqs", str(args.max_num_seqs),
         "--max-num-batched-tokens", str(args.max_num_batched_tokens),
         "--async-scheduling", "--long-prefill-token-threshold", "0",
         "--no-enable-prefix-caching",
         "--kv-cache-memory-bytes", str(args.kv_cache_memory_bytes),
         "--gpu-memory-utilization", str(args.gpu_memory_utilization),
-        "--compilation-config", json.dumps(graph),
-        "--additional-config", json.dumps({"cudagraph_specialize_prefill": True}),
+        *(("--enforce-eager",) if family.get("eager") else
+          ("--compilation-config", json.dumps(graph),
+           "--additional-config", json.dumps({"cudagraph_specialize_prefill": prefill_graphs}))),
     ]
     for option, value in (
         ("--max-model-len", args.max_model_len), ("--tokenizer", args.tokenizer),
@@ -118,8 +183,18 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
             command += [option, str(value)]
     if spec is not None:
         command += ["--speculative-config", json.dumps(spec)]
+    if getattr(args, "kv_cache_dtype_skip_layers", None):
+        command += ["--kv-cache-dtype-skip-layers", *args.kv_cache_dtype_skip_layers.split(",")]
+    if getattr(args, "extra_vllm_args", None):
+        command += [str(x) for x in json.loads(args.extra_vllm_args)]
     environment = dict(selected["environment"])
     environment.update(family.get("environment", {}))
+    if getattr(args, "dspine", None):
+        # The paths of the DSpine measurements, unless set: one GDN state per request with the deferred commit
+        # kernel, CUDA split-KV verification attention, and KV groups sized for the drafter's layers.
+        environment.setdefault("KAILLM_GDN_SINGLE_SLOT", "1")
+        environment.setdefault("KAILLM_VERIFY_ATTN_CUDA", "1")
+        environment.setdefault("KAILLM_KV_GROUPS", "auto")
     if args.device is not None:
         environment["CUDA_VISIBLE_DEVICES"] = args.device
     if args.cpu_cache_dir is not None:

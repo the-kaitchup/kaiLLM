@@ -98,7 +98,7 @@ def _shards(path):
 def inspect(model):
     """Serving defaults for a GGUF reference; empty defaults when it is not a local file."""
     result = {"architecture": None, "mtp_layers": 0, "speculation": "ngram",
-              "tokenizer": LFM3_TOKENIZER, "environment": {}}
+              "tokenizer": LFM3_TOKENIZER, "environment": {}, "itq": False}
     path = Path(str(model)).expanduser()
     if not path.is_file():
         return result
@@ -115,6 +115,15 @@ def inspect(model):
         layers = int(metadata.get("qwen35.nextn_predict_layers", 0) or 0)
         result["mtp_layers"] = layers if any(".nextn." in name for name in names) else 0
         result["speculation"] = "mtp" if result["mtp_layers"] else "none"
+        result["itq"] = any(name.startswith("itq.table.") for name in names)   # kaiPTQ (ITQ trellis) checkpoint
         result["tokenizer"] = None
         result["environment"] = dict(QWEN35_ENVIRONMENT)
+    elif architecture == "inkling2_loop":
+        # Inkling 2 Mini (llama.cpp master layout): tokenizer from the GGUF, no draft tokens (the conv states and
+        # the relative-bias attention do not verify drafts yet), full CUDA graphs for decode-only steps (prefill
+        # and mixed steps run eagerly)
+        result["speculation"] = "none"
+        result["tokenizer"] = None
+        result["cudagraph_mode"] = "FULL_DECODE_ONLY"
+        result["itq"] = any(name.startswith("itq.table.") for name in names)
     return result

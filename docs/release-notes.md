@@ -1,3 +1,52 @@
+# kaiLLM 0.1.0rc6
+
+ITQ tensors at 3.5 and 4 bits per weight, for the v2.0 LFM3 chimachima checkpoints.
+
+- kaiPTQ checkpoints can now contain ITQ tensors at 3.5 and 4 bits per weight:
+  2 weights per step, at 7 or 8 bits per step. The v2.0 750 MB and 1000 MB
+  checkpoints in
+  [kaitchup/LFM3-1.7B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/LFM3-1.7B-chimachima-kaiPTQ)
+  use them and need this release. The kernels are prebuilt for compute
+  capability 8.6 and 12.0.
+- Everything else is unchanged from 0.1.0rc5.
+
+# kaiLLM 0.1.0rc5
+
+Qwen3.8 27B kaiPTQ checkpoints, which also run on the RTX 3060, and DSpine speculative decoding.
+
+- kaiPTQ checkpoints can now contain ITQ tensors: trellis codes, as in QTIP,
+  decoded with an integer table, from 1.25 to 3 bits per weight. Each step
+  decodes 4 weights from a 12-bit table, or 2 weights from a 10-bit table of
+  int8 pairs. The decode, GEMV and prefill kernels are prebuilt for compute
+  capability 8.6 and 12.0, so the first server start doesn't compile them.
+- Qwen3.8 kaiPTQ checkpoints run on the RTX 3060 (compute capability 8.6).
+  Plain Qwen3.5 and Qwen3.8 GGUFs are still qualified on Blackwell only.
+- The first one, Q2_K_XXS in
+  [kaitchup/Qwen3.8-27B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-chimachima-kaiPTQ),
+  is 6.73 GB, the same file size as unsloth's UD-IQ1_M. Its KL divergence to
+  the BF16 model on held-out reasoning traces and code is 57% lower. On the
+  RTX 3060, kaiLLM runs it 14% faster at batch 1 and 34% faster at batch 8
+  than llama.cpp runs UD-IQ1_M, and prefills 83% faster. On the RTX Pro 6000,
+  it is 3% slower at batch 1, but 84% faster at batch 8, 132% faster at
+  batch 16, and it prefills 54% faster.
+- DSpine speculative decoding with `--dspine`, one sequence at a time:
+  kaiLLM serves a DSpine drafter next to a Qwen3.8 27B GGUF. The chimachima
+  repository has a 4-bit copy of Tencent's drafter, and a drafter in Tencent's
+  own format is converted once to the same 4-bit weights. In a chat with
+  thinking, it makes the Q2_K_XXS checkpoint 1.85× faster on the RTX Pro 6000
+  and 1.92× faster on the RTX 3060. On GPUs with 16 GB or less, `--dspine`
+  defaults to a 1 GiB KV cache and 512-token prefill chunks: with the larger
+  defaults, the server went past 12 GB and decoding got about 4x slower.
+- The installer now works from a clone of the repository: it imported the
+  clone's kaillm folder instead of the installed package and failed at its
+  last step.
+- MTP speculative decoding now uses the same verification paths as DSpine:
+  split-KV attention sized for each verification length, and vLLM's fused GDN
+  path up to 16 tokens. I didn't measure the 0.1.0rc4 MTP figures again with
+  this release.
+- unsloth's UD-IQ1_M runs, but kaiLLM's kernels for the IQ1_M and IQ2 formats
+  aren't optimized yet: llama.cpp is much faster with it.
+
 # kaiLLM 0.1.0rc4
 
 The weights now stay quantized in VRAM, as with llama.cpp.

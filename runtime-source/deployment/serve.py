@@ -27,8 +27,11 @@ def prepare(args, inherited, executable=sys.executable):
     core = policy.verify_core_contract(selected["core_contract"], [str(core_root)])
     # GGUF-family defaults (tokenizer, memory plans, MTP) fill only unset options.
     family = serving_defaults.inspect(args.model)
-    if family["architecture"] == "qwen35" and architecture != "sm120":
-        raise ValueError("Qwen3.5/Qwen3.8 GGUFs are qualified on compute capability 12.0 only in this release")
+    # Qwen3.8 kaiPTQ (ITQ) checkpoints are qualified on the RTX 3060 too; plain Qwen GGUFs only on 12.0.
+    if (family["architecture"] == "qwen35" and architecture != "sm120" and not family.get("itq")
+            and os.environ.get("KAILLM_ALLOW_QWEN35_SM86") != "1"):
+        raise ValueError("Qwen3.5/Qwen3.8 GGUFs are qualified on compute capability 12.0 only in this release "
+                         "(kaiPTQ checkpoints also run on 8.6)")
     if args.tokenizer is None and family["tokenizer"] is not None:
         args.tokenizer = family["tokenizer"]
     prepared = serve.prepare_command(args, selected, executable, family=family)
@@ -94,6 +97,14 @@ def main(argv=None):
         prepared = prepare(args, os.environ)
     except (OSError, ValueError, RuntimeError) as error:
         parser.error(str(error))
+    if args.cpu_fit and not args.dry_run:
+        from vllm_gguf_plugin import cpu_fit
+
+        try:
+            cpu_fit.parse_context(args.cpu_fit)
+        except ValueError as error:
+            parser.error(str(error))
+        sys.exit(cpu_fit.run(prepared, args))
     if args.dry_run:
         # Omit unrelated inherited environment values from logs.
         prepared["environment"] = {

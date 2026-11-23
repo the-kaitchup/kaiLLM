@@ -181,6 +181,10 @@ if (
 def ggml_dequantize(
     W: torch.Tensor, quant_type: int, m: int, n: int, dtype: torch.dtype | None
 ) -> torch.Tensor:
+    from .inkling.ggml_types import NEW_TYPES, dequantize as dequantize_new_type
+    if quant_type in NEW_TYPES:      # MXFP4 / NVFP4 / Q1_0 / Q2_0 / F8_E4M3 (llama.cpp master): torch, exact
+        # flat block order (callers pass (rows, cols) or, for embeddings, (cols, rows) of a contiguous buffer)
+        return dequantize_new_type(W.reshape(-1), quant_type).reshape(m, n).to(dtype or torch.float16)
     if _cuda_kernel_available("ggml_dequantize", quant_type):
         return torch.ops._C_gguf.ggml_dequantize(W, quant_type, m, n, dtype)
     return ggml_dequantize_triton(W, quant_type, m, n, dtype)

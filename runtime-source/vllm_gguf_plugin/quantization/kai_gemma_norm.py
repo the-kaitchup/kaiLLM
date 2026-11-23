@@ -65,6 +65,21 @@ def gemma_rms_norm(x, residual, weight32, eps):
 
 
 def _forward(self, x, residual=None):
+    if residual is not None and x.is_cuda and x.dtype == torch.float32:
+        from . import itq
+        if itq.raw_producer(x) is not None:
+            # x is the raw output of an ITQ producer: its post, the residual add, this norm and the next ITQ group's
+            # prep run as one itq_add_norm_prep launch (same arithmetic as post -> norm_prepare -> prep)
+            weight32 = self.__dict__.get("_kai_weight32")
+            if weight32 is None or weight32.device != x.device:
+                weight32 = (self.weight.detach().float() + 1.0).contiguous()
+                self.__dict__["_kai_weight32"] = weight32
+            if self.__dict__.get("_kai_np_consumers"):
+                from . import native_fused
+
+                native_fused.STASH.pop(id(self), None)
+            y, rout = itq.add_norm(x, residual, weight32, self.variance_epsilon, self.__dict__.get("_itq_consumer"))
+            return y, rout if f32_residual() or residual.dtype == torch.float32 else rout.to(residual.dtype)
     if (
         not x.is_cuda
         or x.dtype not in (torch.bfloat16, torch.float16)

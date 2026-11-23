@@ -83,6 +83,23 @@ class GGUFConfig(QuantizationConfig):
                 return UnquantizedLinearMethod()
             return GGUFLinearMethod(self)
         if isinstance(layer, VocabParallelEmbedding):
+            from .yaqa_linear import get_yaqa_parts
+
+            vocab_parts = get_yaqa_parts(self, prefix)
+            if (
+                vocab_parts
+                and len(vocab_parts) == 1
+                and vocab_parts[0][1][2] is not None
+                and vocab_parts[0][1][2].get("codec") == "itqvocab"
+            ):
+                import os
+
+                from .itq_vocab import ITQVocabMethod
+
+                # untied input embedding only (an LM head reads every row each step)
+                host = (os.getenv("KAILLM_HOST_EMBEDDING", "0") == "1"
+                        and type(layer).__name__ == "VocabParallelEmbedding")
+                return ITQVocabMethod(self, vocab_parts[0], host=host)
             if is_layer_skipped_gguf(
                 prefix, self.unquantized_modules, self.packed_modules_mapping
             ):

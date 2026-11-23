@@ -38,6 +38,10 @@ class GGUFConfigParser(ConfigParserBase):
             code_revision=code_revision,
             **kwargs,
         )
+        if not is_gguf(original_model) and getattr(config, "dflash_config", None) is not None:
+            # An HF draft checkpoint (DFlash / DSpine) next to a GGUF target inherits the target's config
+            # format; it keeps its own architectures (the causal-LM mapping below would drop the draft head).
+            return config_dict, config
 
         if config.model_type == "qwen3_moe" and "norm_topk_prob" not in config_dict:
             config_dict["norm_topk_prob"] = True
@@ -45,6 +49,10 @@ class GGUFConfigParser(ConfigParserBase):
 
         if config.model_type == "lfm3":
             model_type = "Lfm3ForCausalLM"
+        elif config.model_type == "hy_v4_flash":
+            model_type = "HYV4FlashForCausalLM"
+        elif config.model_type == "inkling2_loop":
+            model_type = "Inkling2LoopForCausalLM"
         elif config.model_type not in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES:
             raise RuntimeError(f"Can't get gguf config for {config.model_type}.")
         else:
@@ -78,6 +86,14 @@ class GGUFConfigParser(ConfigParserBase):
             from .lfm3_metadata import prepare_lfm3_metadata
 
             if metadata_path := prepare_lfm3_metadata(model):
+                return metadata_path
+            from .hy4_metadata import prepare_hy4_metadata
+
+            if metadata_path := prepare_hy4_metadata(model):
+                return metadata_path
+            from .inkling_metadata import prepare_inkling_metadata
+
+            if metadata_path := prepare_inkling_metadata(model):
                 return metadata_path
             return Path(model).parent
         if is_remote_gguf(model):

@@ -54,12 +54,17 @@ def prepare_serve(args, forwarded):
         raise ValueError("Sequence capacity, context length and port must be positive")
     if args.compute_capability and not args.dry_run:
         raise ValueError("--compute-capability is available only with --dry-run")
-    capability = args.compute_capability or query_gpu(args.device)["compute_capability"]
+    gpu = None if args.compute_capability else query_gpu(args.device)
+    capability = args.compute_capability or gpu["compute_capability"]
     if capability not in ("8.6", "12.0"):
         raise ValueError("This release is qualified for compute capabilities 8.6 and 12.0")
+    # DSpine adds a 1.5 GB drafter. On GPUs with 16 GB or less, a 1 GiB KV cache (8,192 tokens for one sequence) and
+    # 512-token prefill chunks keep the server within the GPU's memory: beyond it, decoding gets about 4x slower.
+    small_dspine = any(a == "--dspine" or a.startswith("--dspine=") for a in forwarded) and (
+        gpu["total_memory_MiB"] <= 16 * 1024 if gpu else capability == "8.6")
     kv = args.kv_cache_memory_bytes
     if kv is None:
-        kv = (2 if capability == "8.6" else 4) * 2**30
+        kv = 2**30 if small_dspine else (2 if capability == "8.6" else 4) * 2**30
     if kv <= 0:
         raise ValueError("KV reservation must be positive")
     root = payload_root()
@@ -76,6 +81,9 @@ def prepare_serve(args, forwarded):
                "--device", args.device, *forwarded]
     if args.tokenizer is not None:
         command[3:3] = ["--tokenizer", args.tokenizer]
+    if small_dspine and not any(a == "--max-num-batched-tokens" or a.startswith("--max-num-batched-tokens=")
+                                for a in forwarded):
+        command.extend(["--max-num-batched-tokens", "512"])
     if args.dry_run:
         command.extend(["--dry-run", "--compute-capability", capability])
     environment = dict(os.environ)
