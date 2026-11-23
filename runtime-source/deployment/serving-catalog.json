@@ -157,7 +157,7 @@
           "v1/worker/gpu/model_runner.py": "cb2e309975c3141c77c4a76201bbc26219fd60aab8cadea52140c936c1dac64f",
           "v1/worker/gpu/spec_decode/ngram/conditional.py": "40c3e64190019582223d34b056f4c89b08dfe0f420b4c3f9579d7a186298ca8d",
           "v1/worker/gpu/spec_decode/ngram/conditional_kernels.py": "6de90d5f70b2421456f44714947cd42d339ec404fa11473d460ac821b696dbbf",
-          "v1/worker/gpu/spec_decode/ngram/single_active.py": "b6731e468f7d8f7985f4bc4f88f478b7e7987228c6e64d87dad8761920af7fbf",
+          "v1/worker/gpu/spec_decode/ngram/single_active.py": "87131b49dbda8fe5f9405f49c2ed6e6ba60182da96cb4e069a00e74e73d975ba",
           "v1/worker/gpu/spec_decode/ngram/speculator.py": "429bf902bf75e6a6055435d5561b4236a8d40b716788773f9bab73210c63e92a",
           "v1/worker/gpu/buffer_utils.py": "2003383dd226d864f5b17f382d1cfd0349aaa222a246a08b0b1f5027825c5a9a"
         },
@@ -299,7 +299,7 @@
           "v1/worker/gpu/model_runner.py": "cb2e309975c3141c77c4a76201bbc26219fd60aab8cadea52140c936c1dac64f",
           "v1/worker/gpu/spec_decode/ngram/conditional.py": "40c3e64190019582223d34b056f4c89b08dfe0f420b4c3f9579d7a186298ca8d",
           "v1/worker/gpu/spec_decode/ngram/conditional_kernels.py": "6de90d5f70b2421456f44714947cd42d339ec404fa11473d460ac821b696dbbf",
-          "v1/worker/gpu/spec_decode/ngram/single_active.py": "b6731e468f7d8f7985f4bc4f88f478b7e7987228c6e64d87dad8761920af7fbf",
+          "v1/worker/gpu/spec_decode/ngram/single_active.py": "87131b49dbda8fe5f9405f49c2ed6e6ba60182da96cb4e069a00e74e73d975ba",
           "v1/worker/gpu/spec_decode/ngram/speculator.py": "429bf902bf75e6a6055435d5561b4236a8d40b716788773f9bab73210c63e92a",
           "v1/worker/gpu/buffer_utils.py": "2003383dd226d864f5b17f382d1cfd0349aaa222a246a08b0b1f5027825c5a9a"
         },
