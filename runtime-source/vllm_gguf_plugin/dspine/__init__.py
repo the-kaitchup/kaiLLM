@@ -10,6 +10,7 @@ import sys
 
 # EAGLEConfig (method dflash) renames a draft architecture to DFlash{arch}: register and route both names.
 ARCHS = ("DSpineDraftModel", "DFlashDSpineDraftModel")
+INKLING_ARCHS = ("InklingDSparkDraftModel", "DFlashInklingDSparkDraftModel")
 
 
 def register_dspine() -> None:
@@ -19,6 +20,9 @@ def register_dspine() -> None:
     for arch in ARCHS:
         if arch not in supported:
             ModelRegistry.register_model(arch, "vllm_gguf_plugin.dspine.model:DSpineQwen3ForCausalLM")
+    for arch in INKLING_ARCHS:
+        if arch not in supported:
+            ModelRegistry.register_model(arch, "vllm_gguf_plugin.inkling.dspark_model:InklingDSparkForCausalLM")
 
     import vllm.v1.worker.gpu.spec_decode as spec_decode
 
@@ -28,6 +32,9 @@ def register_dspine() -> None:
 
     def init_speculator(vllm_config, device, req_states):
         spec = vllm_config.speculative_config
+        if spec is not None and spec.method == 'dflash' and set(INKLING_ARCHS).intersection(spec.draft_model_config.architectures or []):
+            from ..inkling.dspark_speculator import InklingDSparkSpeculator
+            return InklingDSparkSpeculator(vllm_config, device)
         if spec is not None and spec.method == "dflash" and set(ARCHS) & set(spec.draft_model_config.architectures or []):
             from .speculator import DSpineSpeculator
 

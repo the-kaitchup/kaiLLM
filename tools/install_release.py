@@ -84,10 +84,10 @@ def extract_release(archive, target, expected_directory):
     return root
 
 
-def install(archive=None, prefix=None):
+def install(archive=None, prefix=None, bin_dir=None):
     record = release_metadata(PROJECT / "release.json")
     # Temporary files stay on the normal user disk; /tmp may be a small tmpfs.
-    cache = Path.home() / ".cache/kaillm"
+    cache = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "kaillm"
     cache.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="install-", dir=cache) as temporary:
         work = Path(temporary)
@@ -106,7 +106,13 @@ def install(archive=None, prefix=None):
         # The release installer runs `python -m kaillm.install_native_runtime`. PYTHONSAFEPATH keeps the current
         # directory off its module path: run from this checkout, the checkout's kaillm/ folder would shadow the
         # installed package.
-        subprocess.run(command, check=True, env={**os.environ, "PYTHONSAFEPATH": "1"})
+        environment = {**os.environ, "PYTHONSAFEPATH": "1"}
+        if bin_dir is not None:
+            environment["KAILLM_BIN_DIR"] = str(bin_dir)
+        # A checkout installer publishes its launcher after validation. Omit
+        # the frozen installer's success message for the private bin directory.
+        stdout = subprocess.DEVNULL if bin_dir is not None else None
+        subprocess.run(command, check=True, env=environment, stdout=stdout)
 
 
 def main():

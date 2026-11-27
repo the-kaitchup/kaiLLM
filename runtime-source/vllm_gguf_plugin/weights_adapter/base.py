@@ -28,6 +28,8 @@ class GGUFLoadSpec:
     # None: compact GGUF when a yaqa.manifest exists (Qwen / LFM3 kaiPTQ); False keeps ordinary GGML tensors on the
     # GGUF methods (Inkling: ITQ experts and ITQ linears beside any GGML type, per tensor)
     compact_gguf: bool | None = None
+    # Fused GGUF matrix -> ordered (logical tensor name, output rows) slices.
+    gguf_row_splits: dict[str, tuple[tuple[str, int], ...]] | None = None
 
 
 class BaseGGUFWeightsAdapter(ABC):

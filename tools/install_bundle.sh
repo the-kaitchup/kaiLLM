@@ -13,7 +13,7 @@ if [[ $# -gt 0 ]]; then
   kaillm_prefix=$2
 fi
 if [[ $(uname -s) != Linux || $(uname -m) != x86_64 ]]; then
-  printf '%s\n' 'This release requires Linux x86_64 (including WSL2).' >&2
+  printf '%s\n' 'This release requires Linux x86_64.' >&2
   exit 1
 fi
 if ! command -v c++ >/dev/null 2>&1; then

@@ -2,9 +2,12 @@
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 import gc
 import itertools
+import mmap
+import os
+import struct
 from collections import defaultdict
 from collections.abc import Callable, Hashable, Iterable, Sequence
-from contextlib import ExitStack
+from contextlib import ExitStack, nullcontext
 from dataclasses import dataclass, replace
 from itertools import groupby, product
 from typing import TYPE_CHECKING, Any, NamedTuple, Protocol
@@ -83,6 +86,9 @@ class BatchExecutionDescriptor:
     num_active_loras: int = 0
     # Number of microbatches the batch is split into (DBO). 1 means no splitting.
     num_ubatches: int = 1
+    inkling_ordinary_pair_attention: bool = False
+    inkling_router_verify: bool = False
+    inkling_row_stable: bool = False
 
 
 def make_cudagraph_stats(
@@ -117,6 +123,10 @@ def _is_compatible(
     max_query_len: int | None,
     num_ubatches: int,
 ) -> bool:
+    if desc.inkling_ordinary_pair_attention and (
+        num_reqs, num_tokens, uniform_token_count, max_query_len, num_ubatches
+    ) != (2, 2, 1, 1, 1):
+        return False
     # desc.uniform_token_count=None (PIECEWISE) can handle any uniform_token_count
     # desc.num_reqs=None means no request padding needed (PIECEWISE)
     # desc.max_query_len=None means the graph does not constrain query length; a
@@ -166,6 +176,9 @@ class CudaGraphManager:
         self.cudagraph_mode = cudagraph_mode
         self.decode_query_len = decode_query_len
         self.varlen_decode = varlen_decode
+        self._inkling_pair_witness = None
+        self._inkling_pair_replays = 0
+        self._inkling_pair_witness_path = os.getenv("KAILLM_INKLING_PAIR_ATTENTION_WITNESS")
         # DBO supports FULL CUDA graphs only.
         self.ubatch_runner = ubatch_runner
 
@@ -274,6 +287,18 @@ class CudaGraphManager:
         # draft tokens. The scheduler might use a smaller number so we need
         # to capture graphs for all possible values during decode.
         speculative_config = self.vllm_config.speculative_config
+        ordinary_pair_attention = (
+            self.vllm_config.additional_config.get("inkling_ordinary_pair_attention") is True
+            and self.cudagraph_mode == CUDAGraphMode.FULL
+            and speculative_config is None
+            and self.max_num_reqs == 2
+            and self.decode_query_len == 1
+            and getattr(self.vllm_config.model_config.hf_config, "model_type", None) == "inkling2_loop"
+            and self.vllm_config.model_config.dtype == torch.bfloat16
+            and self.vllm_config.cache_config.cache_dtype in ("auto", "bfloat16")
+            and getattr(self.vllm_config.attention_config.backend, "name", None) == "TRITON_ATTN"
+            and os.getenv("KAILLM_INKLING_ATTN", "auto") in ("auto", "triton")
+        )
         if (
             speculative_config
             and speculative_config.uses_dynamic_speculative_decoding()
@@ -298,6 +323,12 @@ class CudaGraphManager:
             )
         else:
             decode_query_lens = [self.decode_query_len]
+        # FULL normally shares one routine for mixed and decode. The K3 adapter
+        # also needs a dedicated 1x4 FULL child for device-side hit/miss dispatch.
+        single_active_full = (self.cudagraph_mode == CUDAGraphMode.FULL and speculative_config is not None
+                              and speculative_config.ngram_gpu_single_active)
+        if single_active_full:
+            separate_decode_routine = True
         if speculative_config and speculative_config.ngram_gpu_match_only:
             if self.varlen_decode or self.decode_query_len != 4:
                 raise ValueError("GPU match-only requires uniform K3 verification.")
@@ -374,6 +405,10 @@ class CudaGraphManager:
                     num_active_loras=num_active_loras,
                 )
                 descs_by_mode[mixed_mode].append(desc)
+                if ordinary_pair_attention and (num_tokens, num_reqs, num_active_loras) == (2, 2, 0):
+                    descs_by_mode[mixed_mode].append(
+                        replace(desc, inkling_ordinary_pair_attention=True)
+                    )
 
                 ubatch_desc = self._maybe_ubatch_twin(desc)
                 if ubatch_desc is not None:
@@ -394,6 +429,10 @@ class CudaGraphManager:
                 # num_tokens. Group them so each graph covers the same candidate range.
                 for num_tokens, group in groupby(lora_descs, lambda d: d.num_tokens):
                     matching = list(group)
+                    if single_active_full:
+                        matching.sort(key=lambda desc: desc.uniform_token_count is None)
+                    elif ordinary_pair_attention and num_tokens == 2:
+                        matching.sort(key=lambda desc: not desc.inkling_ordinary_pair_attention)
                     for i in range(current_range_start, num_tokens + 1):
                         key = (i, num_active_loras)
                         self._candidates.setdefault(key, []).extend(matching)
@@ -585,6 +624,17 @@ class CudaGraphManager:
         # while those copies are still in flight.
         get_offloader().sync_prev_onload()
         self.graphs[desc].replay()
+        if desc.inkling_ordinary_pair_attention and self._inkling_pair_witness_path:
+            if self._inkling_pair_witness is None:
+                with open(self._inkling_pair_witness_path, "x+b") as witness:
+                    witness.write(bytes(8))
+                    witness.flush()
+                    self._inkling_pair_witness = mmap.mmap(witness.fileno(), 8)
+            self._inkling_pair_replays += 1
+            struct.pack_into("<Q", self._inkling_pair_witness, 0, self._inkling_pair_replays)
+        observer = getattr(self, "benchmark_draft_observer", None)
+        if observer is not None:
+            observer.draft_replayed()
 
     def init_breakable_cg_runner(
         self, model: nn.Module, key_fn: Callable[..., Hashable] | None = None
@@ -624,6 +674,29 @@ class ModelCudaGraphManager(CudaGraphManager):
             varlen_decode=varlen_decode,
             ubatch_runner=ubatch_runner,
         )
+        from vllm_gguf_plugin.inkling import chima_verifier
+
+        self.inkling_verify_twins = {}
+        self.inkling_verify_is_real = None
+        spark_verifier = os.environ.get("KAILLM_SPARK_DSPARK5_ROW_ROUTER") == "1"
+        if chima_verifier.enabled():
+            if spark_verifier:
+                raise ValueError("Select either the RTX 5090 or the DGX Spark Inkling verifier")
+            if cudagraph_mode != CUDAGraphMode.FULL or decode_query_len != 6:
+                raise ValueError("Chimachima XS row-stable verification requires FULL DSpark-5 graphs")
+            chima_verifier.validate(vllm_config, device)
+            captures = self._capture_descs.get(CUDAGraphMode.FULL, [])
+            self.inkling_verify_twins = chima_verifier.capture_twins(captures)
+            self.inkling_verify_is_real = chima_verifier.real_width
+        elif spark_verifier:
+            from vllm_gguf_plugin.inkling import spark_verify_router
+
+            if (cudagraph_mode == CUDAGraphMode.FULL and decode_query_len in (4, 6)
+                    and spark_verify_router.supported(vllm_config, device)
+                    and decode_query_len == vllm_config.num_speculative_tokens + 1):
+                captures = self._capture_descs.get(CUDAGraphMode.FULL, [])
+                self.inkling_verify_twins = spark_verify_router.capture_twins(captures, decode_query_len)
+                self.inkling_verify_is_real = spark_verify_router.real_verify_width
         self.hidden_states: torch.Tensor | None = None
         self.aux_hidden_states: list[torch.Tensor] = []
         self.use_aux_hidden_state_outputs = False
@@ -802,6 +875,19 @@ class ModelCudaGraphManager(CudaGraphManager):
                 pcp_manager=pcp_manager,
             )
 
+            if desc.inkling_ordinary_pair_attention:
+                from vllm_gguf_plugin.inkling.attention import InklingAttnMetadata
+
+                # Captured executables retain this table's device address.
+                if getattr(self, "_inkling_one_pass_tiles", None) is None:
+                    self._inkling_one_pass_tiles = torch.tensor(
+                        ((0, 0), (1, 0)), dtype=torch.int32, device=self.device
+                    )
+                for metadata in attn_metadata.values():
+                    if isinstance(metadata, InklingAttnMetadata):
+                        metadata.tiles = self._inkling_one_pass_tiles
+                        metadata.one_pass_decode = True
+
             # Capture with dummy rows marked as padding.
             input_buffers.is_padding.fill_(True)
             is_padding = input_buffers.is_padding[:num_tokens]
@@ -829,7 +915,16 @@ class ModelCudaGraphManager(CudaGraphManager):
                             num_active_loras=desc.num_active_loras,
                             is_prefill=is_prefill if specialize_phase else None,
                         )
-                    with set_forward_context(
+                    verifier_scope = nullcontext()
+                    if desc.inkling_row_stable:
+                        from vllm_gguf_plugin.inkling import chima_verifier
+
+                        verifier_scope = chima_verifier.capture()
+                    elif desc.inkling_router_verify:
+                        from vllm_gguf_plugin.inkling import spark_verify_router
+
+                        verifier_scope = spark_verify_router.capture()
+                    with verifier_scope, set_forward_context(
                         attn_metadata,
                         self.vllm_config,
                         num_tokens=num_tokens,

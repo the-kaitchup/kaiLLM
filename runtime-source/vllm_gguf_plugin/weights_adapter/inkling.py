@@ -1,11 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Inkling 2 Mini (`inkling2_loop`, llama.cpp master layout) GGUF names -> Inkling2LoopForCausalLM parameters."""
+"""Map fixed-loop Inkling GGUF tensors to Inkling2LoopForCausalLM parameters."""
 
 from __future__ import annotations
 
 import re
 
 import gguf
+import numpy as np
 
 from ..qwen35_metadata import resolve_gguf_shards
 from ..weight_utils import SCALAR_GGUF_TYPES, gguf_quant_weights_iterator_multi
@@ -35,7 +36,7 @@ EXPERTS = {"ffn_gate_up_exps.weight": "experts.gate_up.weight", "ffn_down_exps.w
 CTRL = {"q": "q", "k": "k", "v": "v", "ffn": "ffn"}
 
 
-def inkling_name_map(names: set[str]) -> dict[str, str]:
+def inkling_name_map(names: set[str], legacy_loop=False) -> dict[str, str]:
     out = {}
     for g in names:
         if g in GLOBAL:
@@ -50,6 +51,12 @@ def inkling_name_map(names: set[str]) -> dict[str, str]:
         base = f"model.layers.{layer}."
         lm = re.match(r"(attn_[a-z_]+)\.weight$", tail)
         cm = re.match(r"loop_(q|k|v|ffn)_ctrl_(down|gain|forget)\.weight$", tail)
+        if legacy_loop:
+            legacy = re.fullmatch(r"loop_(attn|k|v|mlp)_(down|gain|forget)\.weight", tail)
+            if legacy:
+                target = {"attn": "q", "mlp": "ffn", "k": "k", "v": "v"}[legacy[1]]
+                out[g] = base + f"ctrl_{target}_{legacy[2]}"
+                continue
         if lm and lm.group(1) in LINEARS:
             out[g] = base + f"attn.{LINEARS[lm.group(1)]}.weight"
         elif tail in PARAMS:
@@ -74,22 +81,57 @@ def takes_quantized(target: str) -> bool:
             or ".experts.down.weight" in target)
 
 
+def legacy_message_queries(tensors, config):
+    """Unpack the Q/FFN and K/V query rows for each physical core layer."""
+    start, end = config["loop_start"], config["loop_end"]
+    width = config["hidden_size"]
+    physical = {int(m[1]) for name in tensors if (m := re.fullmatch(r"blk\.(\d+)\.attn_q\.weight", name))}
+    if physical != set(range(config["num_hidden_layers"])):
+        raise ValueError("Inkling loop metadata and physical attention blocks disagree")
+    rank = config["loop_gate_rank"]
+    for i in range(start, end):
+        for branch in ("attn", "k", "v", "mlp"):
+            for op in ("down", "gain", "forget"):
+                name = f"blk.{i}.loop_{branch}_{op}.weight"
+                shape = (2 * width, rank) if op == "down" else (rank, width)
+                if name not in tensors or tuple(tensors[name].shape) != shape:
+                    raise ValueError(f"Missing or malformed physical Inkling loop controller: {name}")
+    tables = []
+    for name in ("loop_res_query.weight", "loop_kv_res_query.weight"):
+        tensor = tensors.get(name)
+        if tensor is None or tensor.tensor_type.name != "F32" or tuple(tensor.shape) != (width, 2 * (end - start)):
+            raise ValueError(f"Missing or malformed packed Inkling loop query: {name}")
+        tables.append(tensor.data.reshape(2 * (end - start), width))
+    q, kv = tables
+    return {f"model.layers.{start + i}.msg_query": np.stack((q[2 * i], kv[2 * i], kv[2 * i + 1], q[2 * i + 1]))
+            for i in range(end - start)}
+
+
 class InklingGGUFAdapter(BaseGGUFWeightsAdapter):
     @classmethod
     def matches(cls, config):
         return config.get_text_config().model_type == "inkling2_loop"
 
     def prepare_loading(self, model_path, model_config):
+        from ..inkling_metadata import inkling_config_dict
         from ..yaqa_gguf import read_yaqa_manifest
         paths = resolve_gguf_shards(model_path)
         tensors, manifest = {}, {}
+        legacy_config = None
         for p in paths:
             reader = gguf.GGUFReader(str(p))
+            if p == paths[0] and reader.fields["general.architecture"].contents() == "inkling2":
+                legacy_config = inkling_config_dict({k: v.contents() for k, v in reader.fields.items()
+                                                     if k == "general.architecture" or k.startswith("inkling2.")})
             for t in reader.tensors:
                 tensors[t.name] = t
             manifest.update(read_yaqa_manifest(reader))
         components = {c for d in manifest.values() for c in d.get("components", {}).values()}
-        mapping = inkling_name_map(set(tensors) - components)
+        self.message_queries = {}
+        if legacy_config is not None:
+            self.message_queries = legacy_message_queries(tensors, legacy_config)
+            components.update(("loop_res_query.weight", "loop_kv_res_query.weight"))
+        mapping = inkling_name_map(set(tensors) - components, legacy_loop=legacy_config is not None)
         # dense itq linears (attention projections): kaiLLM's YAQA linear method loads their components; itq-moe
         # experts are built by inkling/loading.py from the manifest
         dense_itq = {name: d for name, d in manifest.items() if d.get("codec") == "itq"}
@@ -117,9 +159,10 @@ class InklingGGUFAdapter(BaseGGUFWeightsAdapter):
                                       compact_gguf=False)
 
     def prepare_weights(self, model_config):
-        import numpy as np
         import torch
         from ..inkling.ggml_types import NEW_TYPES, dequantize as dq_new
+        for name, data in self.message_queries.items():
+            yield name, torch.from_numpy(data)
         for path in self.load_spec.weights_source:
             for t in gguf.GGUFReader(str(path)).tensors:
                 if t.name in self.dequant_names:

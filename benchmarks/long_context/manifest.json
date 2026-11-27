@@ -1,7 +1,785 @@
 {
+  "dgx_spark_hardware": [
+    "5d16447e69809368",
+    "bd93ad94a0b76567"
+  ],
+  "kaillm": {
+    "release": "0.1.0rc6",
+    "source": "the-kaitchup/kaiLLM",
+    "default_revision": "237e7b749e8b68a0eec6f9a79f2061205ebb14b8",
+    "lfm_ngram_revision": "3bb39678cf436024c52f785d5b97e39b418c62f8",
+    "runtime_locks": {
+      "default": {
+        "public_source": "a3895aa965c86ac01e6fc3e054d85197efd02d78ea1167a0de48e916d6cd06f3",
+        "equivalent_source": "493df5c037a694407e755254f1cbb3e528f2751fae9dacc21330b4b24c333478"
+      },
+      "lfm_ngram": {
+        "public_source": "e227679a7b8ad99e4b39f36831e4c2c9f2e5682a52a7da5d574de3d029cdd150",
+        "equivalent_source": "5deb6e21c7d282aa0011daf1ec78136d86f557a0639f80816f0af5769d91c7ea"
+      },
+      "hy4_pipeline": {
+        "source": "167dea24714526ab06d19638a037ec1f990468a0bd9164d186137c72231dd350"
+      },
+      "inkling_legacy": {
+        "source": "c3c7bfe02bcaa3fc9e6d6453aa3a8afba23849f373cf384a1009bb5464bebd7f"
+      },
+      "inkling_dspark": {
+        "source": "d2dff2339bb6cc20e1b4fa9a1693700b5b26ff9862edebc07436587720ba0cc4"
+      },
+      "inkling_legacy_dspark": {
+        "source": "390156ba67971a1cd76b6de406a8467711034679d50f2fc5b5aec2c6b279e55f"
+      }
+    },
+    "hy4_pipeline_revision": "47f76dd2b8f4247dac10444a556a5dd017a8a85b",
+    "inkling_legacy_revision": "1eb7e39b2cb30984e10b21ecad376edd5ca763fa",
+    "inkling_dspark_revision": "4f8e40722c086141b2e218c79c3a5a389b210958",
+    "inkling_legacy_dspark_revision": "2e435ae8f45095b085b15d31545400daadb54332",
+    "full_graph_runtimes": [
+      {
+        "revision": "f1e15143fab7ec5674f7231e38f8cd29cdba2cc8",
+        "source": "75f9b42307661cf5f45113733be61cdd226f6aba1e3edda386d0f0449028283a",
+        "models": [
+          "inkling-dondon-s"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "hardware_id": "bd93ad94a0b76567",
+        "batch": 1,
+        "qualification_sha256": "dd4a38457995dd36ee3cb26662e687d183f2dcab67f34602304215f444bfe22e",
+        "model_revision": "1268c29b21d41c668a5b11044e9e9e2c6f0c2b75"
+      },
+      {
+        "revision": "c86ac75aadd6b825736424e657e25450da4c1120",
+        "source": "493ac9be8b183c467aeaf3f7e76ad9b0ffc5abfe399c50fd436a74bff6b4e3cc",
+        "models": [
+          "lfm-qad",
+          "lfm-chima",
+          "lfm-suisui"
+        ],
+        "modes": [
+          "ngram1",
+          "ngram3"
+        ]
+      },
+      {
+        "revision": "bb8ca4b2cc82c07ed483bb33a6263e38582a04ce",
+        "source": "64ffdb2989be469b96d3c8b0a6056f8386ef1b0b6d058783e7be51bc6eab0406",
+        "models": [
+          "daisy-iq2m",
+          "daisy-rco",
+          "daisy-dondon",
+          "qwen-udq2",
+          "qwen-chima"
+        ],
+        "modes": [
+          "plain"
+        ]
+      },
+      {
+        "revision": "b756e94dc874f9f24f32b2c2dd5c8ad605670ada",
+        "source": "7b8105c3c60b8fe0bccd41307e7dae80091bf48913eb15e0abcf9bf1cd9b967a",
+        "models": [
+          "inkling-udq2",
+          "inkling-loop-iq4",
+          "lfm-qad",
+          "lfm-chima",
+          "lfm-suisui"
+        ],
+        "modes": [
+          "plain"
+        ]
+      },
+      {
+        "revision": "3f1cc6ccb3250cdc942b7cd54d9f6f067f0951b5",
+        "source": "ad4ac48288888899e4f9951e5c68a3e4a71aa8b4a7750a28a8902cde788c43e7",
+        "models": [
+          "inkling-udq2",
+          "inkling-loop-iq4",
+          "lfm-qad",
+          "lfm-chima",
+          "lfm-suisui"
+        ],
+        "modes": [
+          "plain"
+        ]
+      },
+      {
+        "revision": "9559799e816b39b07089b3a87816c9b9e238d83c",
+        "source": "8567f9661799d869fb493454002c2849fe8cdd687c0e7845ac7fa4b1cc950e87",
+        "models": [
+          "hy4-iq2m",
+          "hy4-dondon"
+        ],
+        "modes": [
+          "plain"
+        ]
+      },
+      {
+        "revision": "f68a885852b49a4b561b2cc7729c3b6c3b017ede",
+        "source": "f7fbeee83c30676cecf7b91753d2c84f93bd6dbd0e83d55588a223b5d344e375",
+        "models": [
+          "hy4-iq2m",
+          "hy4-dondon"
+        ],
+        "modes": [
+          "plain"
+        ]
+      },
+      {
+        "revision": "c6f22a6f3e853490dd38abcfa5b163c1b55ffbe2",
+        "source": "30d31e1c1656e04b99f4f04f2b1964756bd84a567179664bd977397b5a8c9dba",
+        "models": [
+          "inkling-chima-xs",
+          "inkling-chima-s",
+          "inkling-chima-m",
+          "inkling-dondon-xs",
+          "inkling-dondon-s",
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ]
+      },
+      {
+        "revision": "cdaebc735e9d84049a0f8d0f78215a57ad92029d",
+        "source": "9ded23a1f6da50933cf69b771b8ef1a3cdded3b03700f64ab2408f1084e3c149",
+        "models": [
+          "inkling-dondon-xs"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "dondon_gate_types": [
+          16,
+          17,
+          19,
+          22
+        ]
+      },
+      {
+        "revision": "0e538f342e6ddea64a74292ce7e51fb571c8b238",
+        "source": "5276246f87beded6fdbdeee2297e6a96d999705f041c878654f9a6b7484b832c",
+        "models": [
+          "inkling-dondon-xs"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "dondon_gate_types": [
+          16,
+          17,
+          19,
+          22
+        ]
+      },
+      {
+        "revision": "b9e3d1a058fcb568c75f0da2d279544b33626e61",
+        "source": "af14e97234dc50325b76d59ea06db80a11ac311b203e1464dc7124e0cf2607b3",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "qualification_sha256": "6fe2467774a02ad9b8f72c002a9e4c31095f91658c4aae5d1fdba388d21b583f"
+      },
+      {
+        "revision": "21259a7ec351a00b524f1e88cac1f185345afccf",
+        "source": "00ea33293b41756f4eaaff52e954a583bf52e72da4e0ddd126f0018e387a7ea2",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "qualification_sha256": "ee279b3084159410f9e233fa9eb2157f09c312c837443cecbb92b8e792d876fc"
+      },
+      {
+        "revision": "7417185dcedc4e3ccec1cbdd7a83a8b50507fb60",
+        "source": "1cea28501ce12d6c857a36e73b47deba319e9764752a8850c05c08a279567c9e",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "qualification_sha256": "6403ec7d73805253295b58183f4b0ceba0350d1e398af9c359859b33f1242827"
+      },
+      {
+        "revision": "8732d77ace5c7eb426ac18161f3fe79c799a2bcf",
+        "source": "ae4130adad72f4e0c03a778fcb096657b9ff857169a6eff0be55ac728f0f0203",
+        "models": [
+          "inkling-dondon-s"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 1,
+        "hardware_id": "e76eedbca01cbd93",
+        "qualification_sha256": "c3b9852b7f1c55cbe5626449baea777c8677dafb821860a08a47ee865e1f289f"
+      },
+      {
+        "revision": "1fc761312e98a7553c0fb290ae33c12972fd9f86",
+        "source": "3ec257d33471cb08037072f863c81f3d2e298af653e625c59e4c3f7bb50cc696",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 2,
+        "hardware_id": "e76eedbca01cbd93",
+        "qualification_sha256": "25a955deb4d14e0224377a4e64da520d484508ea3e451df7e48700a371645a8f"
+      },
+      {
+        "revision": "a59d68f040836b05d5dcbbaf737149100b25f008",
+        "source": "a291832a36113b390cf7d4c7caa0350207699f923cc4b97c32c89533d9c49c79",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 1,
+        "hardware_id": "7802fff256577573",
+        "qualification_sha256": "4a5d2625765ddcc44883fded112f6dd22ec52699cd351733973a4a8683dd17d2"
+      },
+      {
+        "revision": "a59d68f040836b05d5dcbbaf737149100b25f008",
+        "source": "a291832a36113b390cf7d4c7caa0350207699f923cc4b97c32c89533d9c49c79",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 1,
+        "hardware_id": "89a46ef1b17eba64",
+        "qualification_sha256": "ccb1f399bdfde61dc3919c52475995bef531f4413e7c80e3c00a6840fca46291"
+      },
+      {
+        "revision": "0fad3c9403f9144176d1bb866b579c3111994dcb",
+        "source": "13345d3f8354fc92be0c605ed756d8ff80d1c5c3f1b0b5fa86125c4126116b02",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 2,
+        "hardware_id": "e76eedbca01cbd93",
+        "qualification_sha256": "e40b7036b89792d473d747911680d5a1c533ba52d54aa4280c81fe2cfd6f5da2"
+      },
+      {
+        "revision": "f6248c1cf1d6a1d2ad5936978eef0d6c8e10641f",
+        "source": "124f3c5234221934aca278b82d59c02b7c2a953c9a8f80956e8eccabc8fd9b72",
+        "models": [
+          "inkling-dondon-xs"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "dondon_gate_types": [
+          16,
+          17,
+          19,
+          22
+        ],
+        "qualification_sha256": "4d7d617b039d632ccfaae5a572eda7b2dee57cc080a58345a3e5c7e8317e1287"
+      },
+      {
+        "revision": "daf83069fdf5fedd0a2201091a0f593e483028af",
+        "source": "b73098aca5f58a304b0c122e6e7b5833317e4f85a62da5a7f44f52d94d2ea3f0",
+        "models": [
+          "inkling-chima-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 2,
+        "hardware_id": "e76eedbca01cbd93",
+        "qualification_sha256": "84c98285472c576268a2b95b37ad6a1f0d16c31c72b6819d6622e7cd09a6bd4c"
+      },
+      {
+        "revision": "e14484555b6a93cf354e19009ebf874b3e17209d",
+        "source": "1c1b1df1769201c547fe6d84d50f210b7ef9de80b2eb722ec70bb92e72bbe0a5",
+        "models": [
+          "inkling-dondon-xs"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 1,
+        "hardware_id": "cc35c9ae34d53da4",
+        "qualification_sha256": "f8b5ee9c53dfc8677691948b2c4d163d762ebe8a14079539d3a73a93c6460e21"
+      },
+      {
+        "revision": "789a1e5950dacdf5c7075990f575489ef1652092",
+        "source": "a366838eaa62f6353d8731d199ccc17208eda72453b27c5003b64ada6c84b832",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 1,
+        "hardware_id": "b469193f92dd4ec5",
+        "qualification_sha256": "0ebbb43784e31b322b98c3c560f682cc6dbc2e65de14d6324c09af15a116ec9a"
+      },
+      {
+        "revision": "784dde456cbd6aca3c25e1bb73e128c89fcc7c48",
+        "source": "9b8471562d8546f6ea5439d3c2652c69830bfadf6ac0a447cc33e7ae15a1c2ef",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 1,
+        "hardware_id": "b469193f92dd4ec5",
+        "qualification_sha256": "7cea10b02121225a810698e5d5410d7a04b5969ffe781830402fc2c1377ba16f"
+      },
+      {
+        "revision": "1d2d030500814eb98f26565413a0acac9c5a8e62",
+        "source": "dc61146b2a3833c6e653ae398e3ccdd1866a49329912d4cdc75dff46a2400f1e",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 2,
+        "hardware_id": "e76eedbca01cbd93",
+        "qualification_sha256": "7170ac2f468cab2b15c4bb2cc2494499ab40df50af4d89b82940fc8691f37b04"
+      },
+      {
+        "revision": "0cd52eb23e51abc485aa0f3c5c1537fc21da97fc",
+        "source": "2b54677b810474c5a7bb97df0dc878f474824a0aa113c906dd57078da3ecaf37",
+        "models": [
+          "inkling-dondon-s"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 4,
+        "hardware_id": "e76eedbca01cbd93",
+        "qualification_sha256": "5c59d9eb2a6db0ab71d36d649604fb7d0d5a2b32de9db4f7b9bd881af3a2e61c"
+      },
+      {
+        "revision": "ccf04fd467df26dca50c25963819c0e2f824204c",
+        "source": "d2ad5b2ab3e292dcdc2bfee49498374a054ba5f8a9aac4f2f101f9b6017921bf",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 8,
+        "hardware_id": "b469193f92dd4ec5",
+        "qualification_sha256": "dd34df77c45d655db2136d67a328ae0903537e431f729e1413584d71c4a99853"
+      },
+      {
+        "revision": "98a70af875bc1b40263ddba988e0eed0e2ea5a4c",
+        "source": "178b28ac578325e51ffedfb4c89b641c55c40ef3206cc8fbade1a75d5856e921",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 8,
+        "hardware_id": "b469193f92dd4ec5",
+        "qualification_sha256": "16c8b2c4ae0c84cdb428a444ea2449bb5e791f210f403bc2ef3c333c0be38458"
+      },
+      {
+        "revision": "2028e6a32431a64795bef8b061ac7e8448a20280",
+        "source": "cadf449bf2f3b4e128b73081cb8fa0cb27987025a66dc230f5bdeab0b9384911",
+        "models": [
+          "inkling-chima-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 8,
+        "hardware_id": "b469193f92dd4ec5",
+        "qualification_sha256": "c4b1d42e55757008923b5a03bd3edbd403ee2dddec04861759851496a28223d2"
+      },
+      {
+        "revision": "c87ed8e07d29ad83305b2cc8933856af1d39f5b7",
+        "source": "3abba8899aee88a9a3a755f4497cf739439a503f3045cad29f6f931f5c639b68",
+        "models": [
+          "inkling-chima-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 4,
+        "hardware_id": "e76eedbca01cbd93",
+        "qualification_sha256": "20abeff883f9e740b7e22fd170e0ad837bde16fc58c4afba197b531be4249b2d"
+      },
+      {
+        "revision": "b72b7147742ab7a9adaaa39cc1514e45c5d4c978",
+        "source": "e5028eb0a8d3f644d9c94fd0dc64be35d81293d05ea16892d91d1c3dbf00f097",
+        "models": [
+          "inkling-dondon-xs"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 1,
+        "hardware_id": "757891c7168ff3ef",
+        "qualification_sha256": "6985cc0871ace7a227887013e866d01737cdb88a7515006e61a0ee0dcfb2066a"
+      },
+      {
+        "revision": "b024cbc27e8feb6cd2061d328cee81d328aa0ea0",
+        "source": "e8a7a6497384114166482804b21f232b415ee929aa7327d3dcefdfefd6167f1f",
+        "models": [
+          "inkling-chima-s"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 2,
+        "hardware_id": "e76eedbca01cbd93",
+        "qualification_sha256": "967967a7ee5484ad9dae2d62c558296b1395cd642dc979c144e1be2c57cfdb76"
+      },
+      {
+        "revision": "8a0cf56f7571b094122f76e171efca6f59b0c137",
+        "source": "d21bcc43a06fd96f7b19faaa4cf092826c1a8968492a044ef60e6e06e7cc2e96",
+        "models": [
+          "inkling-dondon-xs"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 1,
+        "hardware_id": "4b356ced876c3e45",
+        "qualification_sha256": "58c604782549a2d757efa4d82b24863c5d4da862b5124b6300d30d11e49eee93"
+      },
+      {
+        "batch": 1,
+        "hardware_id": "4b356ced876c3e45",
+        "models": [
+          "inkling-dondon-s"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "revision": "8a0cf56f7571b094122f76e171efca6f59b0c137",
+        "source": "d21bcc43a06fd96f7b19faaa4cf092826c1a8968492a044ef60e6e06e7cc2e96",
+        "qualification_sha256": "ff6b090bb9c6c79f585e18108ac87d6e93d8543069c32150ebe166d327cae721"
+      },
+      {
+        "batch": 1,
+        "hardware_id": "4b356ced876c3e45",
+        "models": [
+          "inkling-dondon-s"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "revision": "bdaaef831bc554fa720a879ad469c905c0a59f98",
+        "source": "85fc3653a2abed36745c2bfcb88447e6d4b19d72cff450852355eb546fbbe989",
+        "qualification_sha256": "215bdf8ecce256b8b88b99b1c4409e3b1f2d7aad1151f2cd2f3572b2482eed18"
+      },
+      {
+        "batch": 1,
+        "hardware_id": "4b356ced876c3e45",
+        "models": [
+          "inkling-dondon-s"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "revision": "eee78c36b312d0f689c27f7862e3f6187dffb627",
+        "source": "62ccd935f0901ba1bf327395935d7c54ec77a9d6f800233d7f97013632452c75",
+        "qualification_sha256": "327460343c7af207609238105a539351f1b669c3da1e3eba6e282ee6f0a7ba1e"
+      },
+      {
+        "revision": "b024cbc27e8feb6cd2061d328cee81d328aa0ea0",
+        "source": "e8a7a6497384114166482804b21f232b415ee929aa7327d3dcefdfefd6167f1f",
+        "models": [
+          "inkling-dondon-s"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 2,
+        "hardware_id": "e76eedbca01cbd93",
+        "qualification_sha256": "a03422cf257fce25b5c5e1be7cd6fb8494f8b9753008024894ba9e472502c792"
+      },
+      {
+        "revision": "5c55c76048c5ffc0f504813269be3036ae697ad2",
+        "source": "3fd8d4400424cd73ea93e017411580fe9b14783e49581a169bfd43ce98d83994",
+        "models": [
+          "inkling-dondon-s"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 2,
+        "hardware_id": "e76eedbca01cbd93",
+        "qualification_sha256": "7eae825be25201b2e83a92acff478bb7a90f8607a512fb4a8765513b0cae5812"
+      },
+      {
+        "revision": "1ca21bd275127061c6c989dfff6266eca5ee9317",
+        "source": "03c14e93ba6e0db22bb4c25990c34fe1f08842bc4610749d9c2207237b84aaa5",
+        "models": [
+          "inkling-dondon-m"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 2,
+        "hardware_id": "cb62840e2a05437c",
+        "qualification_sha256": "632432d5a4f943f9d0229bb1b6c08be6e377825988a21e17be37c0cd1c821015"
+      },
+      {
+        "revision": "4dc683e8a1034a3a2f9e40d086038f46effa0007",
+        "source": "875980807824171995c2b74c49471d72adfa5abcf150e7a2fdbe5f042d19b434",
+        "models": [
+          "inkling-dondon-s"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 2,
+        "hardware_id": "e76eedbca01cbd93",
+        "qualification_sha256": "6ca99891595fef411865f9ddd49a9849ee021bf6294b23a838990e36256eca87"
+      },
+      {
+        "revision": "86ac55c5fca5b7e796c6ce11a7a3e04c1630d08b",
+        "source": "775737117d273b89ed1ffb3a5ade9d2f43fc6beecb4222a49f4ae57a25515188",
+        "models": [
+          "inkling-chima-s"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 2,
+        "hardware_id": "cb62840e2a05437c",
+        "qualification_sha256": "9720fbb15f66298ecddd2d3fdc82b9232be61036a2ab4ac3f07942b3482d5b83"
+      },
+      {
+        "revision": "86ac55c5fca5b7e796c6ce11a7a3e04c1630d08b",
+        "source": "775737117d273b89ed1ffb3a5ade9d2f43fc6beecb4222a49f4ae57a25515188",
+        "models": [
+          "inkling-chima-xs"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "batch": 2,
+        "hardware_id": "cb62840e2a05437c",
+        "qualification_sha256": "e61f9627073110804eaf6fc139816c329acdd3edc2dbce47b2838b335df968b1"
+      }
+    ],
+    "direct_head_runtimes": [
+      {
+        "models": [
+          "inkling-udq2",
+          "inkling-loop-iq4"
+        ],
+        "modes": [
+          "plain"
+        ],
+        "revision": "f80290570dc26bf01007e1f9444e0da6862b3283",
+        "source": "44294f0e2842c52f95dcf775a3593cb3b30edd1f39f5e9ed16867c847e93891e"
+      }
+    ],
+    "default_dispatch_runtimes": [
+      {
+        "revision": "47daa6eff993b38c837bb88ed17b00b8feb0369d",
+        "source": "da0c796a6a2d2c1ea87e09db921d071a82c9266c128bcc3895bad885670d08fe",
+        "models": [
+          "inkling-dondon-xs"
+        ]
+      },
+      {
+        "revision": "c1db991681546385dafa31e1abb74aee8639bb47",
+        "source": "d87fb8196ea1eea3eaad3fd46a4f6c058ac4905c96b61ff05499805111ab734d",
+        "models": [
+          "inkling-dondon-xs"
+        ]
+      },
+      {
+        "revision": "e66200d725f34c159d6f35608177420e8a742496",
+        "source": "e2f26bc72f6be863a5975feee66e88f36f6397d3c1f4950bf5aef5558ee64f0f",
+        "models": [
+          "inkling-dondon-xs"
+        ]
+      },
+      {
+        "revision": "1c7979242947dfa92a0429b97a1e2b8c781de0ee",
+        "source": "0a2c8803d7e37971b4cdb9a4be372c600248c1543329a4088bb91875ab69ff08",
+        "models": [
+          "inkling-dondon-xs"
+        ]
+      },
+      {
+        "revision": "800ab62d3818c44c9015b797b6b177f9e86aef08",
+        "source": "9225dba68fd6b789bafee4830b809bdbbc03bcd0f493a5e068ce3a195580ffa6",
+        "models": [
+          "inkling-udq2",
+          "inkling-chima-xs",
+          "inkling-dondon-xs"
+        ]
+      },
+      {
+        "revision": "3815707a3f4743ff25077f962e544639009bd97f",
+        "source": "cd6c366eade1ea08a110bfafdd8268405658ac4696406b383c8699772be6b293",
+        "models": [
+          "inkling-loop-iq4"
+        ]
+      },
+      {
+        "revision": "4c744485a2cc72c4a0c2702832b0a332112dbefa",
+        "source": "e6b3ef7535812b6bae1ff9a84b693255bb66bb660097e9844da3ed8c930e7e45",
+        "models": [
+          "inkling-udq2"
+        ]
+      },
+      {
+        "models": [
+          "inkling-loop-iq4"
+        ],
+        "revision": "328c2ce92a227ee2d651cf2718bd3b1061887be5",
+        "source": "fdaa8a61ae264fa2fe5d937105dc981fc12396ff101e382f67dff4622f7d8212"
+      },
+      {
+        "revision": "6cbce489b20e4758a77d95c8a9a28b8f1fab1641",
+        "source": "3f8c330ae0d59cabdb5434037272f206df03ef240d562d506742c7d2ff4c3c92",
+        "models": [
+          "inkling-udq2"
+        ]
+      },
+      {
+        "revision": "ba2b758baaec580eece9ae15c32aa30e86a5ae0f",
+        "source": "cbb0dd9836d0a42c690cd6898493aee2459fae8ce5f46f0a53a3ad6e24316c11",
+        "models": [
+          "inkling-udq2"
+        ]
+      },
+      {
+        "revision": "473da6f79ab34721b26c7ada80f64ca14e627ab3",
+        "source": "3d77938eff75035548bb6526b2b035845954997e77551cf246c22d1bf232b934",
+        "models": [
+          "inkling-udq2"
+        ]
+      },
+      {
+        "revision": "a989472f55c3385c634d0d7b8cab9eae09544d33",
+        "source": "2143b1e3d3c4e60d9da04ef821322fa92be84b222ced60cbb0f1ed12b3760619",
+        "models": [
+          "inkling-udq2"
+        ]
+      },
+      {
+        "models": [
+          "inkling-loop-iq4"
+        ],
+        "revision": "6758422bc98e513c9592b56458a259e33940990c",
+        "source": "36542ed38857c59f700719b3e4ec0b63382189ebac7804ce0f3a2c373103b6d0"
+      },
+      {
+        "models": [
+          "inkling-loop-iq4"
+        ],
+        "revision": "609c1611a4e6ddaff02a664e20e0bdc1a44fd3d6",
+        "source": "70acc3e07b302a11c068ad59cb299680a12bf4a504e4fff1db51296963efd8e0"
+      },
+      {
+        "revision": "e7ebc58f72b8169fa692cbde7a22008a2c906715",
+        "source": "82781e0e1ccfe627ed81038911c1f1a4a0c7b7af4ebf514db7505c9343b8d810",
+        "models": [
+          "inkling-loop-iq4"
+        ]
+      },
+      {
+        "revision": "ffe8fc5e6c662fe3a879db174ea244fa27077308",
+        "source": "7e06c3d01770d6d78d39279e86dfdbdd341890b2d006af8230b31cfac79288e6",
+        "models": [
+          "inkling-loop-iq4"
+        ]
+      },
+      {
+        "revision": "ed9235e9ec7aca05e3e63fc10ca1a53a65fdcdd1",
+        "source": "0b295856179a3be3bc8bfc10ac10ae69803df313905f67740dce74a8ccf42606",
+        "models": [
+          "inkling-udq2"
+        ]
+      },
+      {
+        "models": [
+          "inkling-loop-iq4"
+        ],
+        "revision": "bd300e885543f557b0414afba185d89e6c742093",
+        "source": "548afac7758a6a7ad234249b3a0a6454701d36c4051d47859f9291774544388c"
+      },
+      {
+        "models": [
+          "inkling-udq2"
+        ],
+        "revision": "67251f9ba99ce53e00156befc9eb96b8b32e9b23",
+        "source": "ad5649da96226a1c675f5bbac06a20c1e154ef2badb2a14b889ec26c0fda6904"
+      },
+      {
+        "revision": "724c29d569b22e0aa0fd9aa54095eeacc70e856f",
+        "output_control_revision": "6758422bc98e513c9592b56458a259e33940990c",
+        "matched_request_order_check": {
+          "tokens": 16384,
+          "summary_sha256": "742872a720cefc0e3cce93e79c2f8a91f068342597e39f3f2611f653f6237986"
+        },
+        "source": "37363afddc5d1db2b2f9df942653941ef43a06fef0a628ec50cdecd2fa45de0d",
+        "models": [
+          "inkling-loop-iq4"
+        ]
+      },
+      {
+        "models": [
+          "inkling-loop-iq4"
+        ],
+        "revision": "5ee051c545ed47f965aef689ee4ac00c053c971a",
+        "source": "9d908fae1a24b2a9c46cc8b5ec9afec9dec9262a625ecfba89cc0e5aa677e287"
+      },
+      {
+        "revision": "d0f8e74af351e2e0e09ad95ef7311be9ba52a2cf",
+        "source": "42be06d3a029e45a0f70309360fe1b97f3a9f63e7923c1252b8338a6909e2237",
+        "models": [
+          "lfm-chima",
+          "lfm-suisui"
+        ]
+      },
+      {
+        "revision": "426c7f23ca648005d489c456e7d94af462854d84",
+        "source": "7e666615d39c9d015e34b7c370f872fc32d3b29e2e8e6a7115f406dc02e744de",
+        "models": [
+          "inkling-dondon-xs"
+        ]
+      },
+      {
+        "revision": "41776a15975b71195c6a001d5078b091a14d2a57",
+        "source": "f6cef3050a5f01d45b2d1950b798cbea9f52b9fa2d4638f723064948064260e1",
+        "models": [
+          "inkling-dondon-xs"
+        ]
+      }
+    ],
+    "default_dispatch_runtime": {
+      "models": [
+        "inkling-udq2",
+        "inkling-loop-iq4"
+      ],
+      "revision": "a8d3a360b1273410799e1a01b6c00354db7bad49",
+      "source": "9871df199af56a02f409d22fff7f01d20e1926e5fddd28dbb0911469e64e17b7"
+    }
+  },
   "llama_cpp": {
     "source": "ggml-org/llama.cpp",
-    "revision": "f4f6f2e7db76e98c95cc9b7fc608ea669c806044"
+    "revision": "f4f6f2e7db76e98c95cc9b7fc608ea669c806044",
+    "inkling_revision": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6",
+    "hy4_revision": "0a054d0b02454c998e068381d15f3f6615bdd987"
   },
   "sources": {
     "prose": {
@@ -18,23 +796,48 @@
   "tokenizers": {
     "lfm": {
       "repo": "LiquidAI/LFM3-1.7B",
-      "revision": "1da06bec6a819da10b54c67e5c90972b46d81871"
+      "revision": "1da06bec6a819da10b54c67e5c90972b46d81871",
+      "tokenizer_sha256": "7e226e34bface23ccf6e495d157bf77186c1c30a7659880e1a8994db528c3701",
+      "prompt_bank_sha256": {
+        "prose": "0852074519a7f3bd3ee96d9ed3bce4d5768dc6af22812a435efc5bf9fd888dad",
+        "code": "ccc14a540c5b3627aad2342e42c8cddc4626e2698b6f392c5dabffe545ab7c6b"
+      }
     },
     "daisy": {
       "repo": "RadixArk/DaisyRose-27B",
-      "revision": "64a4ec665091bb0c1931babce4e97e686eef3c5c"
+      "revision": "64a4ec665091bb0c1931babce4e97e686eef3c5c",
+      "tokenizer_sha256": "0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3",
+      "prompt_bank_sha256": {
+        "prose": "3f2142eff57c09bf4e42136ee0b0fccde7530bb3b11f8e7fc6f03d7cfdc71e16",
+        "code": "31bd07186ae898f8f2de7fab84879618a01539f06da74bac98ba829ec4f2e48a"
+      }
     },
     "qwen": {
       "repo": "Qwen/Qwen3.8-27B",
-      "revision": "37561816e66b5b9153b1b64c10968c18c1e6f4a0"
+      "revision": "37561816e66b5b9153b1b64c10968c18c1e6f4a0",
+      "tokenizer_sha256": "0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3",
+      "prompt_bank_sha256": {
+        "prose": "3f2142eff57c09bf4e42136ee0b0fccde7530bb3b11f8e7fc6f03d7cfdc71e16",
+        "code": "31bd07186ae898f8f2de7fab84879618a01539f06da74bac98ba829ec4f2e48a"
+      }
     },
     "inkling": {
       "repo": "thinkingmachines/Inkling-2-Mini",
-      "revision": "b85c3cfa615fc413cc9af3379f491b963f3b586a"
+      "revision": "b85c3cfa615fc413cc9af3379f491b963f3b586a",
+      "tokenizer_sha256": "7f332727f9a3f093dd452a39cc978e6757627e5dad1b0673aa4e75174f236dd6",
+      "prompt_bank_sha256": {
+        "prose": "f542c6f8502407be9878fd9243e7f46888421c181672657f7e20e332c62229b2",
+        "code": "02c0d4790080e901fd19ae436a514080e8e2cb622b50695c3a33043a360b145b"
+      }
     },
     "hy4": {
       "repo": "tencent/Hy4-flash",
-      "revision": "b2498eba6a1a3f9bbcab4190bc1313a3c7010c2f"
+      "revision": "b2498eba6a1a3f9bbcab4190bc1313a3c7010c2f",
+      "tokenizer_sha256": "2e3f3d22065c2be5765ce99ab2410411ae338b32ce809ea20dcdb61d00198e83",
+      "prompt_bank_sha256": {
+        "prose": "e7b9459b482ae9bc39f19b6198eeb1bd87b1c6c83b84d83ed61b37799d5fc046",
+        "code": "e8b27e6ac5555493d84f7cc7dfe9fcbdcb9c94a474d4529dc7a07cf1ce584b6f"
+      }
     }
   },
   "dspine": {
@@ -63,20 +866,22 @@
           "sha256": "43a7d09a0e9cba91b63eb7052488b9564569bddfd65754d2e426465e572a7452"
         }
       },
-      "speculation": "ngram"
+      "speculation": "ngram",
+      "gguf_type": "QAD-Q4_0"
     },
     "lfm-chima": {
       "family": "lfm",
       "kind": "chimachima",
       "repo": "kaitchup/LFM3-1.7B-chimachima-kaiPTQ",
-      "revision": "68abaf788a0db495f69843e47292d27b60491265",
+      "revision": "f9963f2a326732d3aa3202c316ebe9e7784999ab",
       "files": {
         "LFM3-1.7B-chimachima-750MB.gguf": {
           "bytes": 738167968,
           "sha256": "86359e66e3d3a7515a8c12d92773929ae84f660a4daae056b2ed5d629ad9a44b"
         }
       },
-      "speculation": "ngram"
+      "speculation": "ngram",
+      "gguf_type": "ITQ 750 MB"
     },
     "lfm-suisui": {
       "family": "lfm",
@@ -89,7 +894,8 @@
           "sha256": "94e06338bc9f3effdc82b32065d6a97cec763dd5870e37c350a36ed6d37f0ed5"
         }
       },
-      "speculation": "ngram"
+      "speculation": "ngram",
+      "gguf_type": "Q4_0_XS"
     },
     "daisy-iq2m": {
       "family": "daisy",
@@ -102,7 +908,10 @@
           "sha256": "4af4d35636c67b9a8777868b30f10170d85d1e5519ce17d13080dff115587f30"
         }
       },
-      "speculation": "auto-qwen"
+      "speculation": "auto-qwen",
+      "native_mtp_layers": 1,
+      "gdn_layout": "fused_qkv_gate_beta_alpha",
+      "gguf_type": "IQ2_M"
     },
     "daisy-rco": {
       "family": "daisy",
@@ -115,7 +924,9 @@
           "sha256": "7e8c69217b5d375c4b339a87a8477dd32de42fdda7a7fdf9fd69cc334813f75c"
         }
       },
-      "speculation": "dspine"
+      "speculation": "dspine",
+      "native_mtp_layers": 0,
+      "gguf_type": "Q2_K_XS"
     },
     "daisy-dondon": {
       "family": "daisy",
@@ -128,7 +939,9 @@
           "sha256": "d44d10c1029c9652ecc4d1c169929c106134303070dce35c0fbc29ae1ecd4554"
         }
       },
-      "speculation": "dspine"
+      "speculation": "dspine",
+      "native_mtp_layers": 1,
+      "gguf_type": "IQ2_M"
     },
     "qwen-udq2": {
       "family": "qwen",
@@ -141,7 +954,9 @@
           "sha256": "18f1187f38e7994b05c08cb45c674b90b7f17523687c83a4614fe493f7ea739d"
         }
       },
-      "speculation": "mtp"
+      "speculation": "mtp",
+      "native_mtp_layers": 1,
+      "gguf_type": "UD-Q2_K_XL"
     },
     "qwen-chima": {
       "family": "qwen",
@@ -154,26 +969,33 @@
           "sha256": "07c0eb9055986dc66b87460e9f0bdfb5396a84d7576082e39c53cf386bad29c9"
         }
       },
-      "speculation": "dspine"
+      "speculation": "dspine",
+      "native_mtp_layers": 0,
+      "gguf_type": "Q2_K_XXS"
     },
     "inkling-udq2": {
       "family": "inkling",
       "kind": "ordinary",
       "repo": "unsloth/Inkling-2-Mini-GGUF",
-      "revision": "45fd08764f2b0bf16b03a5483a80e5c7aaec8772",
+      "revision": "8078d149286eec7193795413b9e0643da6d11fa1",
       "files": {
         "Inkling-2-Mini-UD-Q2_K_XL.gguf": {
-          "bytes": 9138715328,
-          "sha256": "20292e8142b69535ca88a5d04439d0fdeb4dc698d44c002dca706dcf92901441"
+          "bytes": 9138716608,
+          "sha256": "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
         }
       },
-      "speculation": "none"
+      "speculation": "none",
+      "gguf_architecture": "inkling2_loop",
+      "gguf_type": "UD-Q2_K_XL",
+      "kai_humming_deterministic": true,
+      "gguf_tensor_count": 744
     },
     "hy4-iq2m": {
       "family": "hy4",
+      "native_mtp_layers": 0,
       "kind": "ordinary",
       "repo": "Xylolabs/Hy4-flash-GGUF",
-      "revision": "f76cffaca48283433c855a2cc23a554b25d1e5d0",
+      "revision": "cc17e8a68a84db84a367f56fd42fbd40b54b28e2",
       "files": {
         "Hy4-flash-IQ2_M-E4-00001-of-00002.gguf": {
           "bytes": 56261000032,
@@ -184,10 +1006,14 @@
           "sha256": "0ac3ea9e6a73a77efd270cb2fbc6453657eb12fb27718a604503c2636d561c95"
         }
       },
-      "speculation": "inspect"
+      "speculation": "inspect",
+      "transformer_block_bytes": 55118510368,
+      "gguf_type": "IQ2_M-E4",
+      "kai_pipeline_runtime": "hy4_pipeline"
     },
     "hy4-dondon": {
       "family": "hy4",
+      "native_mtp_layers": 0,
       "kind": "dondon",
       "repo": "kaitchup/Hy4-flash-dondon-GGUF",
       "revision": "ee58ad539c09c0b2b290a06f17c99e638a0db139",
@@ -201,16 +1027,1659 @@
           "sha256": "c89e1c7767630dffcca8b2fe76611e04f86c2aaf18f1715192241ce9cea48a74"
         }
       },
-      "speculation": "inspect"
+      "speculation": "inspect",
+      "transformer_block_bytes": 55118510368,
+      "gguf_type": "Q2_K_M",
+      "kai_pipeline_runtime": "hy4_pipeline"
+    },
+    "inkling-loop-iq4": {
+      "family": "inkling",
+      "kind": "ordinary",
+      "repo": "ggml-org/Inkling-2-Mini-GGUF",
+      "revision": "0bdc580634ceac4c4d921f452777bf44228de9af",
+      "files": {
+        "Inkling-2-Mini-IQ4_NL.gguf": {
+          "bytes": 17627940768,
+          "sha256": "cbdf3fa9dc50a4124977980f37da4f1fa764b0cfe800d275cd43d26ce2a81af4"
+        }
+      },
+      "speculation": "none",
+      "gguf_architecture": "inkling2_loop",
+      "transformer_block_bytes": 16631721984,
+      "gguf_type": "IQ4_NL",
+      "kai_dspark_batches": [
+        1
+      ],
+      "kai_dspark_runtime": "inkling_dspark"
+    },
+    "inkling-chima-xs": {
+      "kai_dspark_placements": [
+        {
+          "revision": "46d0dc4e88b6b6926334740dfe05961dee402c00",
+          "source": "b3cab2f94e59e2d169dbd8d18dae38e5e25f86e0d85bd3afed49ddd47798f337",
+          "gpu": "NVIDIA GeForce RTX 5080",
+          "matrix_gpu": "RTX 5080",
+          "hardware_id": "4b356ced876c3e45",
+          "batch": 1,
+          "kv_mib": 3648,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ],
+          "row_stable_dspark": true,
+          "prefill_tokens": 512,
+          "qualification_sha256": "ced79a113bf66fa609df4d10e697e251216d0daac715be4194f22ed7d2d190f0",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "revision": "5b148190829c481b97afd2ed599308f15befae61",
+          "source": "67f1a9b1f80e9dabe550eebc926d11afdfd7e3ea871a297c9744c6155a4c67b7",
+          "gpu": "NVIDIA GeForce RTX 3090",
+          "matrix_gpu": "RTX 3090",
+          "hardware_id": "cb62840e2a05437c",
+          "batch": 1,
+          "kv_mib": 3648,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ],
+          "row_stable_dspark": true,
+          "prefill_tokens": 512,
+          "qualification_sha256": "b3e13d56489ed5ab5bf5a3e680e66dcce202d4bde862255d8f1fe0ddf54c8583",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "revision": "7871156d27372726eeecce6bfbe1c7aa6fd34a8b",
+          "source": "17d891e9322737a80d6eebd8ac3822829a59da5ea52a7a3e4e11cfaf94bf5011",
+          "gpu": "NVIDIA GB10",
+          "matrix_gpu": "DGX Spark",
+          "hardware_id": "bd93ad94a0b76567",
+          "batch": 1,
+          "kv_mib": 3840,
+          "plain_kv_mib": 3136,
+          "qualification_sha256": "a4df14657695157631406e372a9ca7a2a76597f01268cb883687eb488dec5b67",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "revision": "0ac4686580d09b345b1b7d37ec35f62858b52891",
+          "source": "00695ebd3489b80519e78a4143e78f08a1a381af5fa5f9ba8ded6d9dcfa8b31d",
+          "gpu": "NVIDIA GeForce RTX 3090",
+          "matrix_gpu": "RTX 3090",
+          "hardware_id": "cb62840e2a05437c",
+          "batch": 1,
+          "kv_mib": 3648,
+          "draft_tokens": 3,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ],
+          "row_stable_dspark": true,
+          "prefill_tokens": 512,
+          "qualification_sha256": "6b586f4ddc753962773aef01bb2b819815eb259ff5929b56ecd62e14b7901901",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "batch": 1,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ],
+          "draft_tokens": 5,
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773",
+          "gpu": "NVIDIA GeForce RTX 5090",
+          "hardware_id": "e76eedbca01cbd93",
+          "kv_mib": 4096,
+          "matrix_gpu": "RTX 5090",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "prefill_tokens": 512,
+          "qualification_sha256": "3a999ac4e92c194cb0c1bbb9a67f1b6f2668d4ab8f5df9149e94b9b4a1505849",
+          "revision": "62cb7504b85ed6d2ef81b8949b7c23d42aa91df2",
+          "row_stable_dspark": true,
+          "source": "8463686ecf5bb56edbf4cd7b479b2bb46e8cf8814f9536d62886f80e4318658e"
+        }
+      ],
+      "benchmark_plain_gpu_batches": {
+        "5080": [
+          2
+        ]
+      },
+      "kai_prefill_chunk_placements": [
+        {
+          "tokens": 512,
+          "hardware_id": "4b356ced876c3e45",
+          "source_revision": "46d0dc4e88b6b6926334740dfe05961dee402c00",
+          "source_lock": "b3cab2f94e59e2d169dbd8d18dae38e5e25f86e0d85bd3afed49ddd47798f337",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "4b356ced876c3e45",
+          "source_revision": "46d0dc4e88b6b6926334740dfe05961dee402c00",
+          "source_lock": "b3cab2f94e59e2d169dbd8d18dae38e5e25f86e0d85bd3afed49ddd47798f337",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "cb62840e2a05437c",
+          "source_revision": "5b148190829c481b97afd2ed599308f15befae61",
+          "source_lock": "67f1a9b1f80e9dabe550eebc926d11afdfd7e3ea871a297c9744c6155a4c67b7",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "cb62840e2a05437c",
+          "source_revision": "5b148190829c481b97afd2ed599308f15befae61",
+          "source_lock": "67f1a9b1f80e9dabe550eebc926d11afdfd7e3ea871a297c9744c6155a4c67b7",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "4b356ced876c3e45",
+          "source_revision": "c6f22a6f3e853490dd38abcfa5b163c1b55ffbe2",
+          "source_lock": "30d31e1c1656e04b99f4f04f2b1964756bd84a567179664bd977397b5a8c9dba",
+          "mode": "plain",
+          "batch": 2,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            128,
+            256,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "cb62840e2a05437c",
+          "source_revision": "0ac4686580d09b345b1b7d37ec35f62858b52891",
+          "source_lock": "00695ebd3489b80519e78a4143e78f08a1a381af5fa5f9ba8ded6d9dcfa8b31d",
+          "mode": "dspark3",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "cb62840e2a05437c",
+          "source_revision": "0ac4686580d09b345b1b7d37ec35f62858b52891",
+          "source_lock": "00695ebd3489b80519e78a4143e78f08a1a381af5fa5f9ba8ded6d9dcfa8b31d",
+          "mode": "dspark3",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "cb62840e2a05437c",
+          "source_revision": "c6f22a6f3e853490dd38abcfa5b163c1b55ffbe2",
+          "source_lock": "30d31e1c1656e04b99f4f04f2b1964756bd84a567179664bd977397b5a8c9dba",
+          "mode": "plain",
+          "batch": 4,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "62cb7504b85ed6d2ef81b8949b7c23d42aa91df2",
+          "source_lock": "8463686ecf5bb56edbf4cd7b479b2bb46e8cf8814f9536d62886f80e4318658e",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "62cb7504b85ed6d2ef81b8949b7c23d42aa91df2",
+          "source_lock": "8463686ecf5bb56edbf4cd7b479b2bb46e8cf8814f9536d62886f80e4318658e",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        }
+      ],
+      "family": "inkling",
+      "kind": "chimachima",
+      "repo": "kaitchup/Inkling-2-Mini-chimachima-kaiPTQ",
+      "revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+      "files": {
+        "Inkling-2-Mini-chimachima-kaiPTQ-Q2_K_XS.gguf": {
+          "bytes": 7998249504,
+          "sha256": "4e71fe95f7dbb05fd349b8b1f1000ec426bb81dc0366252e5bca8c513e32dd5a"
+        }
+      },
+      "speculation": "none",
+      "gguf_type": "Q2_K_XS",
+      "dspark": "inkling-chima-dspark",
+      "benchmark_gpus": [
+        "3090",
+        "5090"
+      ],
+      "benchmark_additional_gpu_batches": {
+        "5080": [
+          1
+        ],
+        "DGX Spark": [
+          1
+        ]
+      },
+      "gguf_architecture": "inkling2_loop",
+      "gguf_tensor_count": 880,
+      "transformer_block_bytes": 7421651328
+    },
+    "inkling-chima-s": {
+      "kai_dspark_placements": [
+        {
+          "revision": "3116655447ee548b288565949b2f6fa4905049b3",
+          "source": "0d6bc8c9044ef3a2bdd5658312a6db1692069c49fd0f79fced7a1c24fba36d19",
+          "gpu": "NVIDIA GeForce RTX 5080",
+          "matrix_gpu": "RTX 5080",
+          "hardware_id": "4b356ced876c3e45",
+          "batch": 1,
+          "kv_mib": 3120,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            64
+          ],
+          "row_stable_dspark": true,
+          "prefill_tokens": 64,
+          "qualification_sha256": "74f96ed1e5f98e4e5fe122bacbd9aceaaa361e0385d3e69dbead8574aceafc9b",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "revision": "16b936a9d13843fe35441ce4170edeeff1059d81",
+          "source": "c658e1c443d03735cb285a8d6f82e799003ca69d89a05a8084a17145191adf33",
+          "gpu": "NVIDIA GeForce RTX 5080",
+          "matrix_gpu": "RTX 5080",
+          "hardware_id": "4b356ced876c3e45",
+          "batch": 1,
+          "kv_mib": 3168,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            256
+          ],
+          "row_stable_dspark": true,
+          "prefill_tokens": 256,
+          "itq_moe_decode_rows": 512,
+          "itq_moe_share_prefill_workspace": true,
+          "qualification_sha256": "c7cae0350342cfaf5220fbd72823ba63ff7e927ddc60285c845511d8bc1e91c1",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "revision": "e81a675766395c6f38224fa6db1eccad4bfdb877",
+          "source": "59e29037f8db28c230a159c1b6acc59eac2b88b7ac8d8eab9a0b5b321bc5beda",
+          "gpu": "NVIDIA GB10",
+          "matrix_gpu": "DGX Spark",
+          "hardware_id": "bd93ad94a0b76567",
+          "batch": 1,
+          "kv_mib": 3840,
+          "plain_kv_mib": 3136,
+          "qualification_sha256": "1133cba8a8d5e19e4824b0a5e3a7dfc4c1f18aa109481b34015a1fc18472a350",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "revision": "e1ef426d639e2b72cbdd2e5c6585ccd897c98725",
+          "source": "0b65a3c3f2da300b1de8c259df799899bc745fd5ba59d2778e5698d60c2d90b4",
+          "gpu": "NVIDIA GB10",
+          "matrix_gpu": "DGX Spark",
+          "hardware_id": "bd93ad94a0b76567",
+          "batch": 1,
+          "kv_mib": 3840,
+          "plain_kv_mib": 3136,
+          "qualification_sha256": "839c67823281b5a956cae1546da76396fc4bf2e6a4565585b65edf4e9a953463",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "revision": "f1e15143fab7ec5674f7231e38f8cd29cdba2cc8",
+          "source": "75f9b42307661cf5f45113733be61cdd226f6aba1e3edda386d0f0449028283a",
+          "gpu": "NVIDIA GB10",
+          "matrix_gpu": "DGX Spark",
+          "hardware_id": "bd93ad94a0b76567",
+          "batch": 1,
+          "kv_mib": 3840,
+          "plain_kv_mib": 3136,
+          "qualification_sha256": "369ba8946731ea47421acf5844ec4d1e8dc3f53cd67fc08c0d1fb6bcc17f4395",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "revision": "be65d433cd311857ab2fd2ab8e1014315429b75a",
+          "source": "65766409efc3ba5abdbe1dc5d9267efc7a73b1b1558185e7f79439e23b4eeab9",
+          "gpu": "NVIDIA GeForce RTX 5080",
+          "matrix_gpu": "RTX 5080",
+          "hardware_id": "4b356ced876c3e45",
+          "batch": 1,
+          "kv_mib": 3168,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            256
+          ],
+          "row_stable_dspark": true,
+          "prefill_tokens": 256,
+          "itq_moe_decode_rows": 512,
+          "itq_moe_share_prefill_workspace": true,
+          "qualification_sha256": "65dde8885afd7bc36b42763fdb30551491494fd9eeed1a2a61641b5754794e1d",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773",
+          "packed_verify_attention": true
+        },
+        {
+          "revision": "7b9466d8a6ce7d58219b38ab1e6649e4390887dc",
+          "source": "3a2c25ed7ee681db04c0d763a39654798c4dac64a8f2d653cecb912d8ab04e16",
+          "gpu": "NVIDIA GeForce RTX 3090",
+          "matrix_gpu": "RTX 3090",
+          "hardware_id": "cb62840e2a05437c",
+          "batch": 1,
+          "kv_mib": 3648,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ],
+          "row_stable_dspark": true,
+          "prefill_tokens": 512,
+          "qualification_sha256": "04289a098c23e1dafe41bbb182654b1e37f1bf1e22115a1a349efb6653a55f6e",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "batch": 1,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ],
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773",
+          "gpu": "NVIDIA GeForce RTX 5090",
+          "hardware_id": "e76eedbca01cbd93",
+          "kv_mib": 4096,
+          "matrix_gpu": "RTX 5090",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "prefill_tokens": 512,
+          "qualification_sha256": "b404f3ab3b060c29521e34cee49137fc8dc7465df2011c141512047006e52b82",
+          "revision": "e4b7dab146c83e47f29efc7042c78df8e544276a",
+          "row_stable_dspark": true,
+          "source": "f5e025d06776e24488f9bc9506945f66d5996b47bd5412bfc42053139dd3e0b8"
+        },
+        {
+          "batch": 1,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ],
+          "draft_tokens": 3,
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773",
+          "gpu": "NVIDIA GeForce RTX 5090",
+          "hardware_id": "e76eedbca01cbd93",
+          "kv_mib": 4096,
+          "matrix_gpu": "RTX 5090",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "prefill_tokens": 512,
+          "qualification_sha256": "cdc2e8db4af7467103de568c83e283bbadddff6f7ae3b1257fe385b841f5f5a0",
+          "revision": "b0b7dba5a09303fd4874a61c808ebd70443471a7",
+          "row_stable_dspark": true,
+          "source": "61a188cde202e7d15d4ea07dc99a3c26da1be9dd3e7e6b1969ce8b0ae2b06f15"
+        },
+        {
+          "revision": "b27d38dd9d2a8e759a112228fea89c4c1bc1f0e6",
+          "source": "1f9eb9206002233be2ede8b131ed3a58b209af635c13c0b55c472de02df3d938",
+          "gpu": "NVIDIA GB10",
+          "matrix_gpu": "DGX Spark",
+          "hardware_id": "bd93ad94a0b76567",
+          "batch": 1,
+          "kv_mib": 3840,
+          "plain_kv_mib": 3136,
+          "qualification_sha256": "1b0dcf77bbfe32bfcdd53580cc9a4dc15293d38b766733f88b720263da24d0e8",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773",
+          "draft_tokens": 3
+        },
+        {
+          "revision": "1d8f326ac2999fcb43660195e936a31239d39012",
+          "source": "6636e8d144aa844f867d35933d29b6afb89eb413c4cf919d2ca44a1f5c447491",
+          "gpu": "NVIDIA GeForce RTX 3090",
+          "matrix_gpu": "RTX 3090",
+          "hardware_id": "cb62840e2a05437c",
+          "batch": 1,
+          "kv_mib": 3648,
+          "draft_tokens": 3,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ],
+          "row_stable_dspark": true,
+          "prefill_tokens": 512,
+          "qualification_sha256": "656ac8a60f984d28d98a9c042f79a8fb36ab73979d8b19f68293807efbd091a4",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        }
+      ],
+      "benchmark_plain_gpu_batches": {
+        "5080": [
+          2
+        ]
+      },
+      "kai_prefill_chunk_placements": [
+        {
+          "tokens": 64,
+          "hardware_id": "4b356ced876c3e45",
+          "source_revision": "3116655447ee548b288565949b2f6fa4905049b3",
+          "source_lock": "0d6bc8c9044ef3a2bdd5658312a6db1692069c49fd0f79fced7a1c24fba36d19",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            64
+          ]
+        },
+        {
+          "tokens": 64,
+          "hardware_id": "4b356ced876c3e45",
+          "source_revision": "3116655447ee548b288565949b2f6fa4905049b3",
+          "source_lock": "0d6bc8c9044ef3a2bdd5658312a6db1692069c49fd0f79fced7a1c24fba36d19",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            64
+          ]
+        },
+        {
+          "batch": 1,
+          "capture_sizes": [
+            1,
+            128,
+            256,
+            512,
+            1024
+          ],
+          "domain": "code",
+          "hardware_id": "4b356ced876c3e45",
+          "mode": "plain",
+          "source_lock": "30d31e1c1656e04b99f4f04f2b1964756bd84a567179664bd977397b5a8c9dba",
+          "source_revision": "c6f22a6f3e853490dd38abcfa5b163c1b55ffbe2",
+          "tokens": 1024
+        },
+        {
+          "tokens": 256,
+          "hardware_id": "4b356ced876c3e45",
+          "source_revision": "16b936a9d13843fe35441ce4170edeeff1059d81",
+          "source_lock": "c658e1c443d03735cb285a8d6f82e799003ca69d89a05a8084a17145191adf33",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            256
+          ]
+        },
+        {
+          "tokens": 256,
+          "hardware_id": "4b356ced876c3e45",
+          "source_revision": "16b936a9d13843fe35441ce4170edeeff1059d81",
+          "source_lock": "c658e1c443d03735cb285a8d6f82e799003ca69d89a05a8084a17145191adf33",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            256
+          ]
+        },
+        {
+          "tokens": 256,
+          "hardware_id": "4b356ced876c3e45",
+          "source_revision": "be65d433cd311857ab2fd2ab8e1014315429b75a",
+          "source_lock": "65766409efc3ba5abdbe1dc5d9267efc7a73b1b1558185e7f79439e23b4eeab9",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            256
+          ]
+        },
+        {
+          "tokens": 256,
+          "hardware_id": "4b356ced876c3e45",
+          "source_revision": "be65d433cd311857ab2fd2ab8e1014315429b75a",
+          "source_lock": "65766409efc3ba5abdbe1dc5d9267efc7a73b1b1558185e7f79439e23b4eeab9",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            256
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "cb62840e2a05437c",
+          "source_revision": "7b9466d8a6ce7d58219b38ab1e6649e4390887dc",
+          "source_lock": "3a2c25ed7ee681db04c0d763a39654798c4dac64a8f2d653cecb912d8ab04e16",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "cb62840e2a05437c",
+          "source_revision": "7b9466d8a6ce7d58219b38ab1e6649e4390887dc",
+          "source_lock": "3a2c25ed7ee681db04c0d763a39654798c4dac64a8f2d653cecb912d8ab04e16",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "e4b7dab146c83e47f29efc7042c78df8e544276a",
+          "source_lock": "f5e025d06776e24488f9bc9506945f66d5996b47bd5412bfc42053139dd3e0b8",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "e4b7dab146c83e47f29efc7042c78df8e544276a",
+          "source_lock": "f5e025d06776e24488f9bc9506945f66d5996b47bd5412bfc42053139dd3e0b8",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "b0b7dba5a09303fd4874a61c808ebd70443471a7",
+          "source_lock": "61a188cde202e7d15d4ea07dc99a3c26da1be9dd3e7e6b1969ce8b0ae2b06f15",
+          "mode": "dspark3",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "b0b7dba5a09303fd4874a61c808ebd70443471a7",
+          "source_lock": "61a188cde202e7d15d4ea07dc99a3c26da1be9dd3e7e6b1969ce8b0ae2b06f15",
+          "mode": "dspark3",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "cb62840e2a05437c",
+          "source_revision": "1d8f326ac2999fcb43660195e936a31239d39012",
+          "source_lock": "6636e8d144aa844f867d35933d29b6afb89eb413c4cf919d2ca44a1f5c447491",
+          "mode": "dspark3",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "cb62840e2a05437c",
+          "source_revision": "1d8f326ac2999fcb43660195e936a31239d39012",
+          "source_lock": "6636e8d144aa844f867d35933d29b6afb89eb413c4cf919d2ca44a1f5c447491",
+          "mode": "dspark3",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        },
+        {
+          "tokens": 64,
+          "hardware_id": "4b356ced876c3e45",
+          "source_revision": "c6f22a6f3e853490dd38abcfa5b163c1b55ffbe2",
+          "source_lock": "30d31e1c1656e04b99f4f04f2b1964756bd84a567179664bd977397b5a8c9dba",
+          "mode": "plain",
+          "batch": 2,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            64
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "cb62840e2a05437c",
+          "source_revision": "c6f22a6f3e853490dd38abcfa5b163c1b55ffbe2",
+          "source_lock": "30d31e1c1656e04b99f4f04f2b1964756bd84a567179664bd977397b5a8c9dba",
+          "mode": "plain",
+          "batch": 4,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        }
+      ],
+      "family": "inkling",
+      "kind": "chimachima",
+      "repo": "kaitchup/Inkling-2-Mini-chimachima-kaiPTQ",
+      "revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+      "files": {
+        "Inkling-2-Mini-chimachima-kaiPTQ-Q3_K_S.gguf": {
+          "bytes": 9998677280,
+          "sha256": "62a97eef7ac458cb7831df31fe526ee42ce88b4318abcb2dc2b94b57208a6655"
+        }
+      },
+      "speculation": "none",
+      "gguf_type": "Q3_K_S",
+      "dspark": "inkling-chima-dspark",
+      "benchmark_gpus": [
+        "3090",
+        "5090"
+      ],
+      "benchmark_additional_gpu_batches": {
+        "5080": [
+          1
+        ],
+        "DGX Spark": [
+          1
+        ]
+      },
+      "gguf_architecture": "inkling2_loop",
+      "gguf_tensor_count": 889,
+      "transformer_block_bytes": 9360562176
+    },
+    "inkling-chima-m": {
+      "kai_dspark_placements": [
+        {
+          "revision": "0c59ea4ea7c7e1a55d6ab280110480ede119305d",
+          "source": "8df6495117b1be55839a1bb48a14018b27ae05b148a6ec35c696a92634833b06",
+          "gpu": "NVIDIA GeForce RTX 5090",
+          "matrix_gpu": "RTX 5090",
+          "hardware_id": "e76eedbca01cbd93",
+          "batch": 1,
+          "kv_mib": 4096,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ],
+          "row_stable_dspark": true,
+          "prefill_tokens": 512,
+          "qualification_sha256": "9ba250c1bceb4ea0c4bf6b9d0cd02b4536aa6e0d58836d77cafd62da88a7ef11",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "revision": "5e813749087b607de5890d438d0150253bb83e0f",
+          "source": "b02eca4b805c11fead3c69bb44239d2f21334444e73e4489ef96e41379c86efe",
+          "gpu": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+          "matrix_gpu": "RTX PRO 6000",
+          "hardware_id": "b469193f92dd4ec5",
+          "batch": 1,
+          "kv_mib": 4096,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ],
+          "row_stable_dspark": true,
+          "prefill_tokens": 512,
+          "qualification_sha256": "488cb7df0472bb51275388f22c87bc7f7bfc69f8279c83ab1b6b250d2c0b0844",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "revision": "ea990bcb0b3aef46ac1e8e9b20fb4664ab11942c",
+          "source": "87fce1cc9c7264a595bc65754ef4bd02ab7f62ca6e0a6f46e38b5957ad658fd2",
+          "gpu": "NVIDIA GeForce RTX 5090",
+          "matrix_gpu": "RTX 5090",
+          "hardware_id": "e76eedbca01cbd93",
+          "batch": 1,
+          "kv_mib": 4096,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ],
+          "row_stable_dspark": true,
+          "prefill_tokens": 512,
+          "qualification_sha256": "285c4f43d2e5041ce8ddb9c9940dbd4c6886a49b6f7989e8b847d969cbafcef3",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        },
+        {
+          "batch": 1,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ],
+          "draft_tokens": 3,
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773",
+          "gpu": "NVIDIA GeForce RTX 5090",
+          "hardware_id": "e76eedbca01cbd93",
+          "kv_mib": 4096,
+          "matrix_gpu": "RTX 5090",
+          "model_revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+          "prefill_tokens": 512,
+          "qualification_sha256": "bdfbc0211c391c768f6c6c312291fbeb90d215482ca3840987b6c4af99cbafab",
+          "revision": "04432c0d5ae36f314f286a5c0c2dbdfa3935a309",
+          "row_stable_dspark": true,
+          "source": "6b1e1db637adaaa3cbda0c42557417a523c94183a7289acbf58e822938e0f699"
+        }
+      ],
+      "benchmark_plain_gpu_batches": {
+        "5080": [
+          1
+        ]
+      },
+      "kai_prefill_chunk_placements": [
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "0c59ea4ea7c7e1a55d6ab280110480ede119305d",
+          "source_lock": "8df6495117b1be55839a1bb48a14018b27ae05b148a6ec35c696a92634833b06",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "0c59ea4ea7c7e1a55d6ab280110480ede119305d",
+          "source_lock": "8df6495117b1be55839a1bb48a14018b27ae05b148a6ec35c696a92634833b06",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "b469193f92dd4ec5",
+          "source_revision": "5e813749087b607de5890d438d0150253bb83e0f",
+          "source_lock": "b02eca4b805c11fead3c69bb44239d2f21334444e73e4489ef96e41379c86efe",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "b469193f92dd4ec5",
+          "source_revision": "5e813749087b607de5890d438d0150253bb83e0f",
+          "source_lock": "b02eca4b805c11fead3c69bb44239d2f21334444e73e4489ef96e41379c86efe",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "ea990bcb0b3aef46ac1e8e9b20fb4664ab11942c",
+          "source_lock": "87fce1cc9c7264a595bc65754ef4bd02ab7f62ca6e0a6f46e38b5957ad658fd2",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "ea990bcb0b3aef46ac1e8e9b20fb4664ab11942c",
+          "source_lock": "87fce1cc9c7264a595bc65754ef4bd02ab7f62ca6e0a6f46e38b5957ad658fd2",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "04432c0d5ae36f314f286a5c0c2dbdfa3935a309",
+          "source_lock": "6b1e1db637adaaa3cbda0c42557417a523c94183a7289acbf58e822938e0f699",
+          "mode": "dspark3",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "04432c0d5ae36f314f286a5c0c2dbdfa3935a309",
+          "source_lock": "6b1e1db637adaaa3cbda0c42557417a523c94183a7289acbf58e822938e0f699",
+          "mode": "dspark3",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        },
+        {
+          "tokens": 64,
+          "hardware_id": "4b356ced876c3e45",
+          "source_revision": "c6f22a6f3e853490dd38abcfa5b163c1b55ffbe2",
+          "source_lock": "30d31e1c1656e04b99f4f04f2b1964756bd84a567179664bd977397b5a8c9dba",
+          "mode": "plain",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            64
+          ]
+        }
+      ],
+      "family": "inkling",
+      "kind": "chimachima",
+      "repo": "kaitchup/Inkling-2-Mini-chimachima-kaiPTQ",
+      "revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+      "files": {
+        "Inkling-2-Mini-chimachima-kaiPTQ-Q3_K_M.gguf": {
+          "bytes": 11998715360,
+          "sha256": "15f85f62e5f1708d3fc1d59d5a964545e53082663beabdd5815bf51f560d9a97"
+        }
+      },
+      "speculation": "none",
+      "gguf_type": "Q3_K_M",
+      "dspark": "inkling-chima-dspark",
+      "benchmark_gpus": [
+        "3090",
+        "5090"
+      ],
+      "benchmark_additional_gpu_batches": {
+        "PRO 6000": [
+          1,
+          8
+        ]
+      },
+      "gguf_architecture": "inkling2_loop",
+      "gguf_tensor_count": 868,
+      "transformer_block_bytes": 11288246016
+    },
+    "inkling-dondon-xs": {
+      "family": "inkling",
+      "kind": "dondon",
+      "repo": "kaitchup/Inkling-2-Mini-dondon-GGUF",
+      "revision": "1268c29b21d41c668a5b11044e9e9e2c6f0c2b75",
+      "files": {
+        "Inkling-2-Mini-dondon-Q2_K_XS.gguf": {
+          "bytes": 7998287520,
+          "sha256": "d2e18b505ed0885e620e4f54c8d7d9734ecdaf5d07c857a32aca069043a862d1"
+        }
+      },
+      "speculation": "none",
+      "gguf_type": "Q2_K_XS",
+      "dspark": "inkling-dondon-dspark",
+      "kai_dspark_placements": [
+        {
+          "revision": "be9d799a71b88c789c50f15e16ec7265b9b8ee02",
+          "source": "4a10a3d6703580c39d28427522daf839a8ea8151ae8e23873100525d5ea221c8",
+          "gpu": "NVIDIA GB10",
+          "matrix_gpu": "DGX Spark",
+          "hardware_id": "bd93ad94a0b76567",
+          "batch": 1,
+          "kv_mib": 3840,
+          "plain_kv_mib": 3136,
+          "qualification_sha256": "8ac95f5124749812606b044cd5636beb808da04c034acbd9003d1e64495c1863",
+          "model_revision": "1268c29b21d41c668a5b11044e9e9e2c6f0c2b75",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        }
+      ],
+      "benchmark_gpus": [
+        "3090",
+        "5090"
+      ],
+      "benchmark_additional_gpu_batches": {
+        "5070 Ti": [
+          1
+        ],
+        "5080": [
+          1
+        ],
+        "DGX Spark": [
+          1
+        ]
+      },
+      "gguf_architecture": "inkling2_loop",
+      "gguf_tensor_count": 744,
+      "transformer_block_bytes": 7494172928,
+      "llama_revision_override": "b5ed9f2845358124d1cbce91f475011047515e74",
+      "llama_repository_override": "unslothai/llama.cpp"
+    },
+    "inkling-dondon-s": {
+      "family": "inkling",
+      "kind": "dondon",
+      "repo": "kaitchup/Inkling-2-Mini-dondon-GGUF",
+      "revision": "1268c29b21d41c668a5b11044e9e9e2c6f0c2b75",
+      "files": {
+        "Inkling-2-Mini-dondon-Q3_K_S.gguf": {
+          "bytes": 9997961376,
+          "sha256": "ff6f8da69caffafb80ad8eab0c52f5d8ea1e14653325379f356edfe395ee4864"
+        }
+      },
+      "speculation": "none",
+      "gguf_type": "Q3_K_S",
+      "dspark": "inkling-dondon-dspark",
+      "benchmark_gpus": [
+        "3090",
+        "5090"
+      ],
+      "benchmark_additional_gpu_batches": {
+        "5080": [
+          1
+        ],
+        "DGX Spark": [
+          1
+        ]
+      },
+      "llama_cpp_dspark3_gpu_batches": {
+        "5090": [
+          1
+        ]
+      },
+      "llama_revision_override": "b5ed9f2845358124d1cbce91f475011047515e74",
+      "llama_repository_override": "unslothai/llama.cpp",
+      "gguf_architecture": "inkling2_loop",
+      "gguf_tensor_count": 744,
+      "kai_dspark_placements": [
+        {
+          "batch": 1,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ],
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773",
+          "gpu": "NVIDIA GeForce RTX 5090",
+          "hardware_id": "e76eedbca01cbd93",
+          "kv_mib": 4096,
+          "matrix_gpu": "RTX 5090",
+          "model_revision": "1268c29b21d41c668a5b11044e9e9e2c6f0c2b75",
+          "prefill_tokens": 512,
+          "qualification_sha256": "1091034e6cf5dfaadf8792bff8733277823727e06c1d265dc9a6d0f73fd3254a",
+          "revision": "3f45daf016c5523e0d2d8ce6276f311062c8cbc3",
+          "row_stable_dspark": true,
+          "source": "630a7bef672705f18a8d2d8dc03838fe3875bf1bb3ffebfb8ffcd3719d6f4ee4"
+        },
+        {
+          "batch": 1,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ],
+          "draft_tokens": 3,
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773",
+          "gpu": "NVIDIA GeForce RTX 5090",
+          "hardware_id": "e76eedbca01cbd93",
+          "kv_mib": 4096,
+          "matrix_gpu": "RTX 5090",
+          "model_revision": "1268c29b21d41c668a5b11044e9e9e2c6f0c2b75",
+          "prefill_tokens": 512,
+          "qualification_sha256": "11661c6f61d09dc35bb06980c720726c2c6d56495a6bbc600ec1f3e27776915c",
+          "revision": "e53c548e64c264831175fdb6bbc7d4d49ea57f73",
+          "row_stable_dspark": true,
+          "source": "c5c6cb766834cd980e377ffde1ce59857e3c1b40ccefef549d4761fd84f849c1"
+        }
+      ],
+      "kai_prefill_chunk_placements": [
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "3f45daf016c5523e0d2d8ce6276f311062c8cbc3",
+          "source_lock": "630a7bef672705f18a8d2d8dc03838fe3875bf1bb3ffebfb8ffcd3719d6f4ee4",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "3f45daf016c5523e0d2d8ce6276f311062c8cbc3",
+          "source_lock": "630a7bef672705f18a8d2d8dc03838fe3875bf1bb3ffebfb8ffcd3719d6f4ee4",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "e53c548e64c264831175fdb6bbc7d4d49ea57f73",
+          "source_lock": "c5c6cb766834cd980e377ffde1ce59857e3c1b40ccefef549d4761fd84f849c1",
+          "mode": "dspark3",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "e76eedbca01cbd93",
+          "source_revision": "e53c548e64c264831175fdb6bbc7d4d49ea57f73",
+          "source_lock": "c5c6cb766834cd980e377ffde1ce59857e3c1b40ccefef549d4761fd84f849c1",
+          "mode": "dspark3",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            512
+          ]
+        }
+      ]
+    },
+    "inkling-dondon-m": {
+      "benchmark_plain_gpu_batches": {
+        "5080": [
+          1
+        ]
+      },
+      "family": "inkling",
+      "kind": "dondon",
+      "repo": "kaitchup/Inkling-2-Mini-dondon-GGUF",
+      "revision": "1268c29b21d41c668a5b11044e9e9e2c6f0c2b75",
+      "files": {
+        "Inkling-2-Mini-dondon-Q3_K_M.gguf": {
+          "bytes": 11663310784,
+          "sha256": "b25d34613efb53a890ac8d197ac1cbac51cbea8b12bcc4cc5d38c227761405ae"
+        }
+      },
+      "speculation": "none",
+      "gguf_type": "Q3_K_M",
+      "dspark": "inkling-dondon-dspark",
+      "benchmark_gpus": [
+        "3090",
+        "5090"
+      ],
+      "benchmark_additional_gpu_batches": {
+        "PRO 6000": [
+          1,
+          2,
+          8
+        ]
+      },
+      "gguf_architecture": "inkling2_loop",
+      "gguf_tensor_count": 744,
+      "transformer_block_bytes": 11072354048,
+      "llama_revision_override": "b5ed9f2845358124d1cbce91f475011047515e74",
+      "llama_repository_override": "unslothai/llama.cpp",
+      "kai_dspark_placements": [
+        {
+          "revision": "c18a38cd486a17a32348c6db816b4bc75ec59669",
+          "source": "1dc4bfd5285cd45324bcb0d6d77104d5f261ff71b5764871ec3184b0750faed6",
+          "gpu": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+          "matrix_gpu": "RTX PRO 6000",
+          "hardware_id": "b469193f92dd4ec5",
+          "batch": 1,
+          "kv_mib": 4096,
+          "plain_kv_mib": 4096,
+          "qualification_sha256": "89ca34b2ded4d21afe0762db0354039a8b20b40b55fb5da53b9c5ab3d4586c4f",
+          "prefill_tokens": 512,
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ],
+          "row_stable_dspark": true,
+          "model_revision": "1268c29b21d41c668a5b11044e9e9e2c6f0c2b75",
+          "drafter_sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        }
+      ],
+      "kai_prefill_chunk_placements": [
+        {
+          "tokens": 512,
+          "hardware_id": "b469193f92dd4ec5",
+          "source_revision": "c18a38cd486a17a32348c6db816b4bc75ec59669",
+          "source_lock": "1dc4bfd5285cd45324bcb0d6d77104d5f261ff71b5764871ec3184b0750faed6",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "code",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        },
+        {
+          "tokens": 512,
+          "hardware_id": "b469193f92dd4ec5",
+          "source_revision": "c18a38cd486a17a32348c6db816b4bc75ec59669",
+          "source_lock": "1dc4bfd5285cd45324bcb0d6d77104d5f261ff71b5764871ec3184b0750faed6",
+          "mode": "dspark5",
+          "batch": 1,
+          "domain": "prose",
+          "capture_sizes": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            512
+          ]
+        }
+      ]
     }
   },
   "dspark": {
-    "repo": "unsloth/Inkling-2-Mini-GGUF",
-    "revision": "45fd08764f2b0bf16b03a5483a80e5c7aaec8772",
+    "repo": "AtomicChat/Inkling-2-Mini-GGUF",
+    "revision": "309509848b3151419aa26d069eb03db57fd29a00",
     "files": {
       "dspark-Inkling-2-Mini-Q8_0.gguf": {
-        "bytes": 402278560,
-        "sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        "bytes": 503857696,
+        "sha256": "f51f32d3fb4dca9ca2f094e447b80741caac0a3445ec02af02a8cc3c86e45992"
+      }
+    }
+  },
+  "provisional_timings": [
+    {
+      "hardware_id": "e76eedbca01cbd93",
+      "timestamp_utc": "2026-11-23T01:49:46Z",
+      "reason": "checkpoint staging"
+    },
+    {
+      "hardware_id": "e76eedbca01cbd93",
+      "timestamp_utc": "2026-11-23T01:47:48Z",
+      "reason": "engine build and checkpoint staging"
+    },
+    {
+      "hardware_id": "e76eedbca01cbd93",
+      "timestamp_utc": "2026-11-23T02:02:49Z",
+      "reason": "checkpoint staging"
+    },
+    {
+      "hardware_id": "268e12199ab9bed2",
+      "timestamp_utc": "2026-11-23T03:04:56Z",
+      "reason": "checkpoint staging"
+    },
+    {
+      "hardware_id": "268e12199ab9bed2",
+      "timestamp_utc": "2026-11-23T02:50:01Z",
+      "reason": "checkpoint staging"
+    },
+    {
+      "hardware_id": "268e12199ab9bed2",
+      "timestamp_utc": "2026-11-23T02:34:03Z",
+      "reason": "checkpoint staging"
+    },
+    {
+      "hardware_id": "268e12199ab9bed2",
+      "timestamp_utc": "2026-11-23T02:05:28Z",
+      "reason": "checkpoint staging"
+    },
+    {
+      "hardware_id": "268e12199ab9bed2",
+      "timestamp_utc": "2026-11-23T01:53:58Z",
+      "reason": "engine build and checkpoint staging"
+    },
+    {
+      "hardware_id": "e76eedbca01cbd93",
+      "timestamp_utc": "2026-11-24T21:08:28Z",
+      "reason": "Independent checkpoint downloads overlapped this timing. A clean repeat is required."
+    }
+  ],
+  "model_history": {
+    "inkling-loop-iq4": {
+      "e8a2cecf0e78914f07cc27b9be711a9b2c7561d9": {
+        "family": "inkling",
+        "kind": "ordinary",
+        "repo": "ggml-org/Inkling-2-Mini-GGUF",
+        "revision": "e8a2cecf0e78914f07cc27b9be711a9b2c7561d9",
+        "files": {
+          "Inkling-2-Mini-IQ4_NL.gguf": {
+            "bytes": 17627940768,
+            "sha256": "cbdf3fa9dc50a4124977980f37da4f1fa764b0cfe800d275cd43d26ce2a81af4"
+          }
+        },
+        "speculation": "none",
+        "gguf_architecture": "inkling2_loop",
+        "transformer_block_bytes": 16631721984,
+        "gguf_type": "IQ4_NL",
+        "kai_dspark_batches": [
+          1
+        ],
+        "kai_dspark_runtime": "inkling_dspark"
+      }
+    },
+    "lfm-chima": {
+      "68abaf788a0db495f69843e47292d27b60491265": {
+        "family": "lfm",
+        "kind": "chimachima",
+        "repo": "kaitchup/LFM3-1.7B-chimachima-kaiPTQ",
+        "revision": "68abaf788a0db495f69843e47292d27b60491265",
+        "files": {
+          "LFM3-1.7B-chimachima-750MB.gguf": {
+            "bytes": 738167968,
+            "sha256": "86359e66e3d3a7515a8c12d92773929ae84f660a4daae056b2ed5d629ad9a44b"
+          }
+        },
+        "speculation": "ngram",
+        "gguf_type": "ITQ 750 MB"
+      }
+    },
+    "inkling-udq2": {
+      "45fd08764f2b0bf16b03a5483a80e5c7aaec8772": {
+        "family": "inkling",
+        "kind": "ordinary",
+        "repo": "unsloth/Inkling-2-Mini-GGUF",
+        "revision": "45fd08764f2b0bf16b03a5483a80e5c7aaec8772",
+        "files": {
+          "Inkling-2-Mini-UD-Q2_K_XL.gguf": {
+            "bytes": 9138715328,
+            "sha256": "20292e8142b69535ca88a5d04439d0fdeb4dc698d44c002dca706dcf92901441"
+          }
+        },
+        "speculation": "none",
+        "gguf_architecture": "inkling2",
+        "load_status": "unsupported_by_pinned_llama_cpp",
+        "gguf_type": "UD-Q2_K_XL",
+        "kai_loader_runtime": "inkling_legacy",
+        "kai_humming_deterministic": true,
+        "kai_dspark_runtime": "inkling_legacy_dspark"
+      }
+    },
+    "hy4-iq2m": {
+      "f76cffaca48283433c855a2cc23a554b25d1e5d0": {
+        "family": "hy4",
+        "native_mtp_layers": 0,
+        "kind": "ordinary",
+        "repo": "Xylolabs/Hy4-flash-GGUF",
+        "revision": "f76cffaca48283433c855a2cc23a554b25d1e5d0",
+        "files": {
+          "Hy4-flash-IQ2_M-E4-00001-of-00002.gguf": {
+            "bytes": 56261000032,
+            "sha256": "2e11f37fab5eec82c525a5b171ea73bcc186098519f256929c9d1bfddd388c87"
+          },
+          "Hy4-flash-IQ2_M-E4-00002-of-00002.gguf": {
+            "bytes": 35640346656,
+            "sha256": "0ac3ea9e6a73a77efd270cb2fbc6453657eb12fb27718a604503c2636d561c95"
+          }
+        },
+        "speculation": "inspect",
+        "transformer_block_bytes": 55118510368,
+        "gguf_type": "IQ2_M-E4",
+        "kai_pipeline_runtime": "hy4_pipeline"
+      },
+      "7e6a5c9461ce8e76687be88a2bd9bb4743387024": {
+        "family": "hy4",
+        "native_mtp_layers": 0,
+        "kind": "ordinary",
+        "repo": "Xylolabs/Hy4-flash-GGUF",
+        "revision": "7e6a5c9461ce8e76687be88a2bd9bb4743387024",
+        "files": {
+          "Hy4-flash-IQ2_M-E4-00001-of-00002.gguf": {
+            "bytes": 56261000032,
+            "sha256": "2e11f37fab5eec82c525a5b171ea73bcc186098519f256929c9d1bfddd388c87"
+          },
+          "Hy4-flash-IQ2_M-E4-00002-of-00002.gguf": {
+            "bytes": 35640346656,
+            "sha256": "0ac3ea9e6a73a77efd270cb2fbc6453657eb12fb27718a604503c2636d561c95"
+          }
+        },
+        "speculation": "inspect",
+        "transformer_block_bytes": 55118510368,
+        "gguf_type": "IQ2_M-E4",
+        "kai_pipeline_runtime": "hy4_pipeline"
+      }
+    }
+  },
+  "drafters": {
+    "inkling-chima-dspark": {
+      "repo": "kaitchup/Inkling-2-Mini-chimachima-kaiPTQ",
+      "revision": "1b27e927c15a6cde7f717926a25b2ce831d08fc1",
+      "files": {
+        "dspark-Inkling-2-Mini-Q8_0.gguf": {
+          "bytes": 402278560,
+          "sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        }
+      }
+    },
+    "inkling-dondon-dspark": {
+      "repo": "kaitchup/Inkling-2-Mini-dondon-GGUF",
+      "revision": "1268c29b21d41c668a5b11044e9e9e2c6f0c2b75",
+      "files": {
+        "dspark-Inkling-2-Mini-Q8_0.gguf": {
+          "bytes": 402278560,
+          "sha256": "2ec78510da837e8fc3be54a14757a0c5fbd2d8d9e85a0d92853fafdf674f3773"
+        }
       }
     }
   }

@@ -27,6 +27,8 @@ def nonnegative(value):
 def parser():
     result = argparse.ArgumentParser(description=__doc__, allow_abbrev=False)
     result.add_argument("model", help="GGUF file or supported GGUF reference")
+    result.add_argument("--pipeline-parallel-size", type=positive,
+                        help="Distribute successive model layers across this many CUDA devices")
     result.add_argument("--max-num-seqs", type=positive, default=8)
     result.add_argument("--max-num-batched-tokens", type=positive, default=2048)
     result.add_argument("--max-model-len", type=positive)
@@ -39,6 +41,10 @@ def parser():
     result.add_argument("--lookup-max", type=positive, default=8)
     result.add_argument("--tokenizer")
     result.add_argument("--hf-config-path")
+    result.add_argument("--tool-call-parser", help="Select the vLLM chat tool call parser")
+    result.add_argument("--enable-auto-tool-choice", action=argparse.BooleanOptionalAction,
+                        help="Enable automatic tool choice. Defaults to enabled for the standard LFM3 chat template.")
+    result.add_argument("--reasoning-parser", help="Select the vLLM chat reasoning parser")
     result.add_argument("--served-model-name")
     result.add_argument("--host", default="127.0.0.1")
     result.add_argument("--port", type=positive, default=8000)
@@ -65,6 +71,8 @@ def parser():
         "--speculative-config", metavar="JSON",
         help="vLLM speculative config to use instead of the GGUF's default drafts (e.g. a DSpine / dflash drafter)",
     )
+    result.add_argument('--dspark', type=Path, metavar='DRAFTER.gguf',
+                        help='Use the native Inkling 2 GGUF block drafter. --spec-tokens defaults to 5.')
     result.add_argument(
         "--dspine", metavar="DRAFTER",
         help="DSpine speculative decoding, with --max-num-seqs 1: a local drafter directory, a Hugging Face repository, "
@@ -106,6 +114,37 @@ def dspine_speculative_config(args):
     return spec, tokens
 
 
+def chat_options(args, family, forwarded):
+    """Use the XML and thinking parsers with the standard LFM3 chat template."""
+    overrides = {option.split("=", 1)[0] for option in forwarded}
+    lfm3_chat = (family.get("architecture") == "lfm3"
+                 and args.tokenizer in (None, serving_defaults.LFM3_TOKENIZER)
+                 and "--chat-template" not in overrides)
+    command = []
+
+    auto_tool_choice = getattr(args, "enable_auto_tool_choice", None)
+    tool_parser = getattr(args, "tool_call_parser", None)
+    reasoning_parser = getattr(args, "reasoning_parser", None)
+    if auto_tool_choice is None and lfm3_chat:
+        auto_tool_choice = True
+    if lfm3_chat and reasoning_parser is None:
+        reasoning_parser = "qwen3"
+
+    # The explicit vLLM escape hatch continues to take precedence.
+    tool_switches = {"--enable-auto-tool-choice", "--no-enable-auto-tool-choice"}
+    if auto_tool_choice is not None and tool_switches.isdisjoint(overrides):
+        command.append("--enable-auto-tool-choice" if auto_tool_choice else "--no-enable-auto-tool-choice")
+    tools_enabled = ("--enable-auto-tool-choice" in overrides
+                     or auto_tool_choice and "--no-enable-auto-tool-choice" not in overrides)
+    if lfm3_chat and tools_enabled and tool_parser is None:
+        tool_parser = "qwen3_xml"
+    if tool_parser is not None and "--tool-call-parser" not in overrides:
+        command.extend(["--tool-call-parser", tool_parser])
+    if reasoning_parser is not None and "--reasoning-parser" not in overrides:
+        command.extend(["--reasoning-parser", reasoning_parser])
+    return command
+
+
 def prepare_command(args, selected, executable=sys.executable, family=None):
     """Build CLI arguments without importing the model runtime.
 
@@ -117,7 +156,21 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         raise ValueError("Require memory utilization in (0,1] and a valid port")
     family = family or {}
     speculation = family.get("speculation", "ngram")
-    if getattr(args, "dspine", None):
+    if getattr(args, 'dspark', None):
+        if getattr(args, 'dspine', None) or getattr(args, 'speculative_config', None):
+            raise ValueError('Select one speculative decoding method')
+        if family.get('architecture') not in ('inkling2_loop', 'inkling2'):
+            raise ValueError('--dspark requires a fixed-loop Inkling GGUF target')
+        from .inkling.dspark_weights import prepare
+        directory, config = prepare(args.dspark, args.model, materialize=not getattr(args, 'dry_run', False))
+        tokens = 5 if args.spec_tokens is None else args.spec_tokens
+        if not 1 <= tokens < config['block_size']:
+            raise ValueError(f"Inkling DSpark requires between 1 and {config['block_size'] - 1} draft tokens")
+        spec = {'method': 'dflash', 'model': str(directory), 'num_speculative_tokens': tokens,
+                'attention_backend': 'TRITON_ATTN', 'draft_load_config': {'load_format': 'auto'}, 'kv_cache_dtype': 'auto'}
+        family = {**family, 'cudagraph_mode': 'FULL',
+                  'environment': {**family.get('environment', {}), 'KAILLM_INKLING_FULL_GRAPHS': '1'}}
+    elif getattr(args, "dspine", None):
         spec, tokens = dspine_speculative_config(args)
     elif speculation == "mtp":
         tokens = policy.choose_mtp_tokens(args.max_num_seqs)
@@ -141,9 +194,30 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
     captures = policy.capture_family(
         args.max_num_seqs, tokens, args.max_num_batched_tokens
     )
+    if (tokens == 3 and args.max_num_seqs == 1 and getattr(args, 'dspark', None)
+            and selected['environment'].get('VLLM_GGUF_YAQA_CUDA_ARCH') == 'sm121'
+            and os.getenv('KAILLM_SPARK_DSPARK5_ROW_ROUTER') == '1'):
+        captures = sorted({*captures, 3})
     # families whose attention replays decode batches only (FULL_DECODE_ONLY): prefill and mixed steps run eagerly
     graph_mode = family.get("cudagraph_mode", "FULL_AND_PIECEWISE")
+    if os.getenv('KAILLM_BENCHMARK_GRAPH_DIR'):
+        if family.get('eager') or graph_mode == 'FULL_DECODE_ONLY' or os.getenv('KAILLM_PREFILL_GRAPHS', '1') == '0':
+            raise ValueError('This model configuration does not provide full prefill and decode CUDA graphs')
+        graph_mode = 'FULL'
     prefill_graphs = os.getenv("KAILLM_PREFILL_GRAPHS", "1") != "0" and graph_mode != "FULL_DECODE_ONLY"
+    from .inkling import chima_verifier
+
+    chima_xs_verifier = chima_verifier.enabled()
+    if chima_xs_verifier:
+        if not (
+            getattr(args, "dspark", None) and family.get("architecture") == "inkling2_loop"
+            and args.max_num_seqs == 1 and tokens == 5 and args.max_num_batched_tokens == 512
+            and args.max_model_len == 73728 and graph_mode == "FULL" and prefill_graphs
+            and getattr(args, "kv_cache_dtype", "auto") in ("auto", "bfloat16")
+        ):
+            raise ValueError("Chimachima XS row-stable verification requires FULL single-slot DSpark-5, "
+                             "a 73,728-token BF16 context and a 512-token prefill chunk")
+        captures = [size for size in captures if size <= tokens + 1 or size == args.max_num_batched_tokens]
     if not prefill_graphs:
         # decode / verification graphs only: prefill chunks run eagerly (their graphs hold the largest activation
         # pool; ~1 % of a chunk's time on an RTX 3060), which leaves that memory to the KV cache
@@ -157,6 +231,15 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         "cudagraph_capture_sizes": captures,
         "max_cudagraph_capture_size": max(captures),
     }
+    additional_config = {"cudagraph_specialize_prefill": prefill_graphs}
+    if (
+        os.getenv("KAILLM_INKLING_ORDINARY_PAIR_ATTENTION") == "1"
+        and (family.get("architecture"), args.max_num_seqs, graph_mode, tokens, spec)
+        == ("inkling2_loop", 2, "FULL", 0, None)
+        and getattr(args, "kv_cache_dtype", "auto") in ("auto", "bfloat16")
+        and os.getenv("KAILLM_INKLING_ATTN", "auto") in ("auto", "triton")
+    ):
+        additional_config["inkling_ordinary_pair_attention"] = True
     command = [
         executable, "-m", "vllm.entrypoints.cli.main", "serve", args.model,
         "--host", args.host, "--port", str(args.port),
@@ -168,15 +251,17 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         "--max-num-batched-tokens", str(args.max_num_batched_tokens),
         "--async-scheduling", "--long-prefill-token-threshold", "0",
         "--no-enable-prefix-caching",
+        *(("--language-model-only",) if os.getenv("KAILLM_BENCHMARK_GRAPH_DIR") else ()),
         "--kv-cache-memory-bytes", str(args.kv_cache_memory_bytes),
         "--gpu-memory-utilization", str(args.gpu_memory_utilization),
         *(("--enforce-eager",) if family.get("eager") else
           ("--compilation-config", json.dumps(graph),
-           "--additional-config", json.dumps({"cudagraph_specialize_prefill": prefill_graphs}))),
+           "--additional-config", json.dumps(additional_config))),
     ]
     for option, value in (
         ("--max-model-len", args.max_model_len), ("--tokenizer", args.tokenizer),
         ("--hf-config-path", args.hf_config_path),
+        ("--pipeline-parallel-size", getattr(args, "pipeline_parallel_size", None)),
         ("--served-model-name", args.served_model_name),
     ):
         if value is not None:
@@ -185,10 +270,15 @@ def prepare_command(args, selected, executable=sys.executable, family=None):
         command += ["--speculative-config", json.dumps(spec)]
     if getattr(args, "kv_cache_dtype_skip_layers", None):
         command += ["--kv-cache-dtype-skip-layers", *args.kv_cache_dtype_skip_layers.split(",")]
-    if getattr(args, "extra_vllm_args", None):
-        command += [str(x) for x in json.loads(args.extra_vllm_args)]
+    forwarded = [str(x) for x in json.loads(getattr(args, "extra_vllm_args", None) or "[]")]
+    command += chat_options(args, family, forwarded) + forwarded
     environment = dict(selected["environment"])
     environment.update(family.get("environment", {}))
+    if getattr(args, "dspark", None):
+        environment["KAILLM_HUMMING_DETERMINISTIC"] = "1"
+    if chima_xs_verifier:
+        environment["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+        environment["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
     if getattr(args, "dspine", None):
         # The paths of the DSpine measurements, unless set: one GDN state per request with the deferred commit
         # kernel, CUDA split-KV verification attention, and KV groups sized for the drafter's layers.

@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 from pathlib import Path
+import struct
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -40,6 +43,32 @@ class LauncherTests(unittest.TestCase):
                 write_launcher(launcher, target)
             self.assertEqual(unrelated.read_text(), "unrelated")
             self.assertTrue(launcher.is_symlink())
+
+    def test_unsupported_gguf_fails_before_runtime_initialization(self):
+        launcher = Path(__file__).resolve().parents[1] / "runtime-source/deployment/serve.py"
+
+        def gguf_string(text):
+            return struct.pack("<Q", len(text)) + text
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            model = root / "target.gguf"
+            for architecture, message in (
+                (b"inkling2", "Choose a fixed-loop Inkling 2 Mini GGUF."),
+                (b"other", "unsupported GGUF architecture 'other'"),
+            ):
+                with self.subTest(architecture=architecture):
+                    model.write_bytes(b"GGUF" + struct.pack("<IQQ", 3, 0, 1)
+                                      + gguf_string(b"general.architecture") + struct.pack("<I", 8)
+                                      + gguf_string(architecture))
+                    result = subprocess.run(
+                        [sys.executable, "-B", str(launcher), str(model),
+                         "--kv-cache-memory-bytes", "1", "--dry-run", "--compute-capability", "8.6",
+                         "--catalog", str(root / "missing-catalog.json")],
+                        capture_output=True, text=True, timeout=10,
+                    )
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertIn(message, result.stderr)
 
 
 if __name__ == "__main__":

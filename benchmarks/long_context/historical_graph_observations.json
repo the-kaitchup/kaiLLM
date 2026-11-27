@@ -1,0 +1,57 @@
+[
+  {
+    "hardware_id": "f01de33c1ed4272b",
+    "checkpoint": "inkling-loop-iq4",
+    "engine": "kaiLLM",
+    "mode": "plain",
+    "batch": 1,
+    "engine_revision": "a3895aa965c86ac01e6fc3e054d85197efd02d78ea1167a0de48e916d6cd06f3",
+    "timestamps_utc": [
+      "2026-11-23T22:09:43Z"
+    ],
+    "observed": "decode_only",
+    "server_log_sha256": "851fa21f28e619dae3584aaccb0decc7fb2fe45b3b07d65fb633d1533642af9f"
+  },
+  {
+    "hardware_id": "f01de33c1ed4272b",
+    "checkpoint": "inkling-loop-iq4",
+    "engine": "kaiLLM",
+    "mode": "plain",
+    "batch": 2,
+    "engine_revision": "a3895aa965c86ac01e6fc3e054d85197efd02d78ea1167a0de48e916d6cd06f3",
+    "timestamps_utc": [
+      "2026-11-23T20:36:58Z",
+      "2026-11-23T20:59:41Z"
+    ],
+    "observed": "decode_only",
+    "server_log_sha256": "b15ed3f7a7756e60f28a4a275a82da0d0bf1607cd5103c6f72d3dd397868bdfd"
+  },
+  {
+    "hardware_id": "5b27be431fd09c1d",
+    "checkpoint": "inkling-udq2",
+    "engine": "kaiLLM",
+    "mode": "plain",
+    "batch": 1,
+    "engine_revision": "c3c7bfe02bcaa3fc9e6d6453aa3a8afba23849f373cf384a1009bb5464bebd7f",
+    "timestamps_utc": [
+      "2026-11-23T20:49:33Z",
+      "2026-11-23T21:31:55Z"
+    ],
+    "observed": "decode_only",
+    "server_log_sha256": "87e9375b00efff2e0838b81545dc9d8f7aafad436f197c526bfd7b5a4c716a1e"
+  },
+  {
+    "hardware_id": "631643a4e782a24f",
+    "checkpoint": "inkling-loop-iq4",
+    "engine": "kaiLLM",
+    "mode": "dspark5",
+    "batch": 1,
+    "engine_revision": "d2dff2339bb6cc20e1b4fa9a1693700b5b26ff9862edebc07436587720ba0cc4",
+    "timestamps_utc": [
+      "2026-11-23T21:12:13Z",
+      "2026-11-23T21:47:41Z"
+    ],
+    "observed": "eager",
+    "server_log_sha256": "4ca3bbc578b652624bd66f376dc4634b246bae1b12292da6303e922e237a736f"
+  }
+]

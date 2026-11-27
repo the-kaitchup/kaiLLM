@@ -17,6 +17,7 @@ head pass over the R columns of diag(norm_w) W_write at load.
 """
 from __future__ import annotations
 
+import os
 from typing import Any
 
 import torch
@@ -41,6 +42,53 @@ class DSpineSpeculator(DFlashSpeculator):
         self.top_k = dspine_head_topk(self.draft_model_config.hf_config)
         self.candidate_sampler = CandidateSampler(self.max_num_reqs, self.num_speculative_steps, self.top_k, device)
         self.tg: torch.Tensor | None = None
+        self._graph_observer = None
+        self._context_graph = None
+        self._auxiliary_graph = None
+        self._refinement_captured = False
+
+    def capture(self):
+        super().capture()
+        if os.environ.get('KAILLM_BENCHMARK_GRAPH_DIR'):
+            from ..draft_context_graph import DraftContextGraph
+            from .context_graph import AuxiliaryProjectionGraph
+
+            if self._aux_staging is None:
+                raise RuntimeError('DSpine needs the target auxiliary tap staging buffer')
+            self._context_graph = DraftContextGraph(self)
+            self._context_graph.capture()
+            self._auxiliary_graph = AuxiliaryProjectionGraph(self)
+            self._auxiliary_graph.capture()
+
+    def install_benchmark_graphs(self, observer):
+        manager = self.query_cudagraph_manager
+        if (not self._refinement_captured or self._context_graph is None or self._context_graph.graph is None
+                or self._auxiliary_graph is None or self._auxiliary_graph.graph is None or manager is None):
+            raise RuntimeError('Incomplete DSpine auxiliary, context or refinement graph capture')
+        for batch in range(1, self.max_num_reqs + 1):
+            desc = manager.dispatch(batch, batch * self.num_query_per_req, self.num_query_per_req, 0)
+            if desc not in manager.graphs:
+                raise RuntimeError(f'No captured DSpine query for {batch} requests')
+        captures = observer.observe_manager(manager)
+        self._graph_observer = observer
+        return captures + 2
+
+    def _store_hidden_states(self, num_tokens, last_hidden_states, aux_hidden_states, num_graph_tokens=0):
+        if self._graph_observer is None:
+            return super()._store_hidden_states(num_tokens, last_hidden_states, aux_hidden_states, num_graph_tokens)
+        if not aux_hidden_states:
+            self._graph_observer.draft_fallback('DSpine received no target auxiliary states', unclassified=True)
+        covered = min(num_tokens, num_graph_tokens)
+        if covered:
+            self._auxiliary_graph.stage(aux_hidden_states, 0, covered, self._aux_staging)
+        self._auxiliary_graph.replay(aux_hidden_states, covered, num_tokens, self._graph_observer)
+
+    def _precompute_context_kv(self, start, end, dummy_run=False):
+        if self._graph_observer is None:
+            return super()._precompute_context_kv(start, end, dummy_run)
+        if dummy_run:
+            self._graph_observer.draft_fallback('Unexpected DSpine dummy request', unclassified=True)
+        self._context_graph.replay(start, end, self._graph_observer)
 
     def draft_logits_spec(self, vllm_config: VllmConfig) -> tuple[torch.dtype, float]:
         # As DFlash2: the walk and the rejection that checks it read the same fp32 distribution over K candidates.
@@ -79,6 +127,8 @@ class DSpineSpeculator(DFlashSpeculator):
         num_tokens_across_dp: torch.Tensor | None,
         cudagraph_runtime_mode: CUDAGraphMode = CUDAGraphMode.NONE,
     ) -> None:
+        if self._graph_observer is not None:
+            self._graph_observer.draft_fallback('DSpine query selected an uncovered shape')
         out = self._run_model(num_tokens_padded, attn_metadata, slot_mappings, num_tokens_across_dp,
                               cudagraph_runtime_mode)
         steps, K = self.num_speculative_steps, self.top_k
@@ -118,3 +168,5 @@ class DSpineSpeculator(DFlashSpeculator):
                 self.sample_idx_mapping[:num_sample],
                 self.sample_col[:num_sample],
             )
+        if os.environ.get('KAILLM_BENCHMARK_GRAPH_DIR') and torch.cuda.is_current_stream_capturing():
+            self._refinement_captured = True

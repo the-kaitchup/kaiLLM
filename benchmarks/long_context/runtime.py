@@ -20,8 +20,8 @@ def link_or_copy(source, destination):
         return shutil.copy2(source, destination)
 
 
-def assemble(dest, release=None):
-    source = HERE / "runtime-source"
+def assemble(dest, release=None, source=None):
+    source = source or HERE / "runtime-source"
     release = release or Path(sysconfig.get_paths()["purelib"]) / "kaillm/_runtime"
     locked = json.loads((source / "source-lock.json").read_text())
     if not (release / "compatible-vllm/core").is_dir():
@@ -46,7 +46,10 @@ def assemble(dest, release=None):
             target.parent.mkdir(parents=True, exist_ok=True)
             target.unlink(missing_ok=True)
             shutil.copy2(file, target)
-        (root / "benchmark-source.sha256").write_text(stamp + "\n")
+        # The base runtime may carry a stamp. Never write through its hardlink.
+        stamp_path = root / "benchmark-source.sha256"
+        stamp_path.unlink(missing_ok=True)
+        stamp_path.write_text(stamp + "\n")
         os.rename(root, dest)
 
 
@@ -54,5 +57,6 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("output", type=Path)
     p.add_argument("--release-runtime", type=Path, help="Runtime extracted from the pinned release wheel")
+    p.add_argument("--source-tree", type=Path, help="Extracted runtime-source directory at the measured commit")
     args = p.parse_args()
-    assemble(args.output, args.release_runtime)
+    assemble(args.output, args.release_runtime, args.source_tree)

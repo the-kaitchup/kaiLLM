@@ -22,10 +22,18 @@ import os
 import torch
 
 from . import ref as R
+from . import chima_verifier, spark_verify_router
 from .moe import route as _route
+from .moe import route_from_logits as _route_from_logits
 from .moe import situ as _situ
 
 ENABLED = os.environ.get("KAILLM_INKLING_COMPILE", "1") == "1"
+ROW_POST = os.environ.get("KAILLM_SPARK_DSPARK5_ROW_POST") == "1"
+ROW_ATTENTION_RMS = os.environ.get("KAILLM_SPARK_DSPARK5_ROW_ATTN_RMS") == "1"
+ROW_EMBEDDING = os.environ.get("KAILLM_SPARK_DSPARK5_ROW_EMBEDDING") == "1"
+SPARK_ROW_FULL_ROUTER = os.environ.get("KAILLM_SPARK_DSPARK5_ROW_FULL_ROUTER") == "1"
+SPARK_MIXTURE_FMA4 = os.environ.get("KAILLM_SPARK_DSPARK5_MIXTURE_FMA4") == "1"
+SPARK_ROW_MIXTURE = os.environ.get("KAILLM_SPARK_DSPARK5_ROW_MIXTURE") == "1"
 CONTROL_KERNEL = os.environ.get("KAILLM_INKLING_CONTROL_KERNEL", "1") == "1"
 CONTROL_MAX_T = int(os.environ.get("KAILLM_INKLING_CONTROL_MAX_T", "32"))
 MIX_KERNEL = os.environ.get("KAILLM_INKLING_MIX_KERNEL", "1") == "1"
@@ -73,6 +81,25 @@ def _route_gpu(x, router, bias, top_k: int, w_scale: float):
     return ids.to(torch.int32), w
 
 
+def _router_weights(weights):
+    """Preserve the ordinary GB10 graph's pair fold and rounded reciprocal."""
+    p0, p1, p2, p3, p4, p5, p6, p7 = weights.unbind(-1)
+    total = ((p0 + p1) + (p4 + p5)) + ((p2 + p3) + (p6 + p7))
+    reciprocal = (total + 1e-20).to(torch.float64).reciprocal().to(torch.float32)
+    return weights * reciprocal.unsqueeze(-1)
+
+
+def _router_tail(logits, bias, top_k: int, w_scale: float):
+    if top_k != 8 or w_scale != 8.0:
+        ids, weights = _route_from_logits(logits, bias, top_k, w_scale)
+        return ids.to(torch.int32), weights
+    probs = torch.sigmoid(logits)
+    selection = probs + bias.float() if bias is not None else probs
+    ids = selection.topk(top_k, dim=-1).indices
+    weights = _router_weights(probs.gather(1, ids)) * w_scale
+    return ids.to(torch.int32), weights
+
+
 def _gate_up_epilogue(gu, scale, ids, F: int, beta: float, lb: float, out_dtype: torch.dtype):
     """Per-expert gate_up scale, SITU, cast for the down projection: gu [T * k, 2F] -> [T * k, F]."""
     gu = gu.float()
@@ -93,7 +120,7 @@ def _combine(y, weights, scale, ids, out_dtype: torch.dtype):
     return y.sum(1).to(out_dtype)
 
 
-_REF = {"mix": R.mix, "control": R.control, "rms": R.rms, "rms_to": _rms_to, "rms_pair": _rms_pair,
+_REF = {"mix": R.mix, "control": R.control, "rms": R.rms, "rms_to": _rms_to, "rms_pair": _rms_pair, "router_tail": _router_tail,
         "clip_rows": R.clip_rows, "route": _route, "route_gpu": _route_gpu, "post_projection": _post_projection,
         "gate_attn": _gate_attn, "gate_up_epilogue": _gate_up_epilogue, "combine": _combine}
 _COMPILED: dict = {}
@@ -141,6 +168,22 @@ def rms(x, w=None, eps: float = 1e-6, out_dtype=None):
     return _fn("rms_to", x)(x, w, eps, out_dtype)
 
 
+def embedding_rms(x, w, eps):
+    if chima_verifier.active() or (
+        ROW_EMBEDDING and x.dtype == torch.bfloat16 and 2 <= x.shape[0] <= 6 and spark_verify_router.active()
+    ):
+        return torch.cat([rms(row, w, eps) for row in x.split(1, dim=0)], dim=0)
+    return rms(x, w, eps)
+
+
+def attention_rms(x, w, eps, out_dtype, *, chima_rows=False):
+    if (chima_rows and chima_verifier.active()) or (
+        ROW_ATTENTION_RMS and 2 <= x.shape[0] <= 6 and spark_verify_router.active()
+    ):
+        return torch.cat([rms(row, w, eps, out_dtype) for row in x.split(1, dim=0)], dim=0)
+    return rms(x, w, eps, out_dtype)
+
+
 def rms_pair(x, w, eps: float, out_dtype):
     return _fn("rms_pair", x)(x, w, eps, out_dtype)
 
@@ -155,13 +198,35 @@ def clip_rows(x, scale, threshold: float):
 
 def route(x, router, bias, top_k: int, w_scale: float):
     """(ids [T, k], weights [T, k] float32); ids int32 on the GPU (the expert kernels' index type)."""
+    spark = spark_verify_router.active()
+    if chima_verifier.active() or (spark and SPARK_ROW_FULL_ROUTER):
+        # Reuse the one-token decode's compiled projection and routing arithmetic.
+        name = "route_gpu" if spark or x.is_cuda else "route"
+        route_row = _fn(name, x[:1])
+        pairs = [route_row(row, router, bias, top_k, w_scale) for row in x.split(1)]
+        ids, weights = zip(*pairs, strict=True)
+        return torch.cat(ids, dim=0), torch.cat(weights, dim=0)
+    if spark:
+        logits = spark_verify_router.project(x, router)
+        return _fn("router_tail", logits)(logits, bias, top_k, w_scale)
     if x.is_cuda:
         return _fn("route_gpu", x)(x, router, bias, top_k, w_scale)
     return _fn("route", x)(x, router, bias, top_k, w_scale)
 
 
-def post_projection(*args, **kwargs):
-    return _fn("post_projection", args[0])(*args, **kwargs)
+def post_projection(q, k, v, rel, q_clip, rel_clip, tau, *config, **kwargs):
+    if chima_verifier.active():
+        return chima_verifier.projected(_fn("post_projection", q[:1]), q, k, v, rel,
+                                       q_clip, rel_clip, tau, config, kwargs)
+    function = _fn("post_projection", q)
+    if ROW_POST and 2 <= q.shape[0] <= 6 and spark_verify_router.active():
+        # Match the ordinary single-token clip and RMS reduction during DSpark verification.
+        rows = []
+        for i in range(q.shape[0]):
+            row = slice(i, i + 1)
+            rows.append(function(q[row], k[row], v[row], rel[row], q_clip, rel_clip, tau[row], *config, **kwargs))
+        return tuple(torch.cat(component, dim=0) for component in zip(*rows))
+    return function(q, k, v, rel, q_clip, rel_clip, tau, *config, **kwargs)
 
 
 def gate_up_epilogue(gu, scale, ids, F: int, beta: float, lb: float, out_dtype):
@@ -169,4 +234,15 @@ def gate_up_epilogue(gu, scale, ids, F: int, beta: float, lb: float, out_dtype):
 
 
 def combine(y, weights, scale, ids, out_dtype):
+    tokens, experts = weights.shape
+    if (SPARK_ROW_MIXTURE and spark_verify_router.active() and 2 <= tokens <= 6 and experts == 8
+            and y.shape == (tokens * experts, 2304) and y.dtype == out_dtype == torch.float32):
+        ordinary = _fn("combine", y[:experts])
+        rows = [ordinary(y[row * experts:(row + 1) * experts], weights[row:row + 1],
+                         scale, ids[row:row + 1], out_dtype) for row in range(tokens)]
+        return torch.cat(rows, dim=0)
+    if SPARK_MIXTURE_FMA4 and spark_verify_router.mixture_supported(y, weights, scale, ids, out_dtype):
+        from .spark_mixture_fma4 import combine_fma4
+        result = combine_fma4(y, weights, scale, ids)
+        return result
     return _fn("combine", y)(y, weights, scale, ids, out_dtype)

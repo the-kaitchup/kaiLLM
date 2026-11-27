@@ -8,6 +8,7 @@ import numpy as np
 import torch
 from vllm.model_executor.layers.linear import LinearMethodBase
 
+from ..weight_utils import gguf_tensor_views
 from ..yaqa_gguf import load_yaqa_components, read_yaqa_profile
 from .yaqa import PackedYAQALinear
 from .yaqa_prefill_cache_out import apply as apply_merged_prefill
@@ -32,13 +33,14 @@ def configure_yaqa_loading(quant_config, load_spec):
     for path in load_spec.weights_source:
         reader = gguf.GGUFReader(path)
         readers[path] = reader
-        tensor_maps[path] = {tensor.name: tensor for tensor in reader.tensors}
+        views = gguf_tensor_views(reader.tensors, getattr(load_spec, "gguf_row_splits", None))
+        tensor_maps[path] = {tensor.name: tensor for tensor in views}
         profile = read_yaqa_profile(reader)
         if profile is not None:
             profiles[path] = profile
         descriptors = {} if profile is None else profile["tensors"]
         has_yaqa_matrices |= bool(descriptors)
-        for tensor in reader.tensors:
+        for tensor in tensor_maps[path].values():
             if tensor.name in mapping and len(tensor.shape) == 2:
                 add_source(tensor.name, (path, tensor.name, None))
         for name, descriptor in descriptors.items():

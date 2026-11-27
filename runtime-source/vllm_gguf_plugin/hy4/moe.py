@@ -87,6 +87,11 @@ class Hy4GGUFExperts(nn.Module):
         if types["gate"] != types["up"]:
             raise ValueError(f"kaiLLM loads ffn_gate_exps and ffn_up_exps as one w13 and needs one GGML type "
                              f"for both (got {types['gate']} and {types['up']})")
+        from .attention import graph_backend_enabled
+        if graph_backend_enabled():
+            from ..quantization.utils import MMVQ_QUANT_TYPES
+            if types["gate"] not in MMVQ_QUANT_TYPES or types["down"] not in MMVQ_QUANT_TYPES:
+                raise ValueError("Hy4 graph execution needs a graph-compatible GGUF MoE kernel for both weights")
         dev = self.w13.device
         g, u, d = (self._pending[p][1] for p in ("gate", "up", "down"))
         self.w13 = torch.cat([g.view(self.E, self.I, -1), u.view(self.E, self.I, -1)], dim=1).contiguous().to(dev)

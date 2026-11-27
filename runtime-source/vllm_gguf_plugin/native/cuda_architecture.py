@@ -8,21 +8,22 @@ uses vLLM's platform capability query; workers validate the actual tensor device
 import os
 
 ENVIRONMENT = "VLLM_GGUF_YAQA_CUDA_ARCH"
-SUPPORTED = ((8, 6), (12, 0))
+SUPPORTED = ((8, 6), (12, 0), (12, 1))
 _LIBRARY_ARCHITECTURES = {}
 
 
 def parse_architecture(value):
     if isinstance(value, str):
         normalized = value.lower().removeprefix("sm_").removeprefix("sm")
-        values = {"86": (8, 6), "8.6": (8, 6), "120": (12, 0), "12.0": (12, 0)}
+        values = {"86": (8, 6), "8.6": (8, 6), "120": (12, 0), "12.0": (12, 0),
+                  "121": (12, 1), "12.1": (12, 1)}
         result = values.get(normalized)
     elif isinstance(value, (tuple, list)):
         result = tuple(value)
     else:
         result = None
     if result not in SUPPORTED:
-        raise ValueError("Native YAQA requires an explicit SM86 or SM120 target")
+        raise ValueError("Native YAQA requires an explicit SM86, SM120 or SM121 target")
     return result
 
 
@@ -39,7 +40,7 @@ def resolve_architecture(value=None):
     if capability is None:
         raise RuntimeError(
             "Cannot discover native YAQA CUDA target; set "
-            f"{ENVIRONMENT}=sm86 or sm120 for GPU-free build/configuration"
+            f"{ENVIRONMENT}=sm86, sm120 or sm121 for GPU-free build/configuration"
         )
     return parse_architecture(tuple(capability))
 
@@ -62,7 +63,8 @@ def architecture_identity(value=None):
         "compute_capability": [major, minor],
         "target": "sm_" + number,
         "gencode": f"-gencode=arch=compute_{number},code=sm_{number}",
-        "architecture_contract": "explicit-sm86-sm120-native-YAQA-v1",
+        "architecture_contract": ("sm121-native-YAQA-v1" if (major, minor) == (12, 1)
+                                  else "explicit-sm86-sm120-native-YAQA-v1"),
     }
 
 

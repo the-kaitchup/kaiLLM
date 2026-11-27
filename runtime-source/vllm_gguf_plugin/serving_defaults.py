@@ -14,6 +14,7 @@ The launcher applies these only to settings the user did not pass explicitly:
   speculation is off unless requested (--spec-tokens selects n-gram drafts).
 """
 
+import os
 import re
 import struct
 from pathlib import Path
@@ -96,20 +97,25 @@ def _shards(path):
 
 
 def inspect(model):
-    """Serving defaults for a GGUF reference; empty defaults when it is not a local file."""
+    """Validate a local GGUF target and derive its serving defaults from the header."""
     result = {"architecture": None, "mtp_layers": 0, "speculation": "ngram",
               "tokenizer": LFM3_TOKENIZER, "environment": {}, "itq": False}
     path = Path(str(model)).expanduser()
     if not path.is_file():
         return result
-    try:
-        metadata, names = read_header(path)
-        for shard in _shards(path)[1:]:
-            if shard.is_file():
-                names += read_header(shard)[1]
-    except (OSError, ValueError, struct.error):
-        return result
+    metadata, names = read_header(path)
     architecture = metadata.get("general.architecture")
+    if architecture is None:
+        raise ValueError(f"{path.name} is missing the GGUF general.architecture field")
+    if architecture == "inkling2" and "inkling2.num_loops" not in metadata:
+        raise ValueError(f"{path.name} uses an unsupported Inkling GGUF layout. "
+                         "Choose a fixed-loop Inkling 2 Mini GGUF.")
+    if architecture not in ("lfm3", "qwen35", "hy_v4_flash", "inkling2_loop", "inkling2"):
+        raise ValueError(f"{path.name} declares unsupported GGUF architecture {architecture!r}. "
+                         "Supported targets are LFM3, Qwen3.5/Qwen3.8, Hy4 Flash, and fixed-loop Inkling 2 Mini.")
+    for shard in _shards(path)[1:]:
+        if shard.is_file():
+            names += read_header(shard)[1]
     result["architecture"] = architecture
     if architecture == "qwen35":
         layers = int(metadata.get("qwen35.nextn_predict_layers", 0) or 0)
@@ -118,12 +124,20 @@ def inspect(model):
         result["itq"] = any(name.startswith("itq.table.") for name in names)   # kaiPTQ (ITQ trellis) checkpoint
         result["tokenizer"] = None
         result["environment"] = dict(QWEN35_ENVIRONMENT)
-    elif architecture == "inkling2_loop":
-        # Inkling 2 Mini (llama.cpp master layout): tokenizer from the GGUF, no draft tokens (the conv states and
-        # the relative-bias attention do not verify drafts yet), full CUDA graphs for decode-only steps (prefill
-        # and mixed steps run eagerly)
+        if os.getenv("KAILLM_BENCHMARK_GRAPH_DIR"):
+            result["environment"].update(KAILLM_QWEN35_FULL_GRAPHS="1", KAILLM_GDN_SINGLE_SLOT="0", KAILLM_GDN_DEFERRED="0")
+    elif architecture == "hy_v4_flash":
+        full = os.getenv("KAILLM_HY4_FULL_GRAPHS") == "1" or bool(os.getenv("KAILLM_BENCHMARK_GRAPH_DIR"))
+        result.update(speculation="none", tokenizer=None, eager=not full)
+        if full:
+            result.update(cudagraph_mode="FULL", environment={"KAILLM_HY4_FULL_GRAPHS": "1"})
+    elif architecture in ("inkling2_loop", "inkling2"):
+        # Enable the mixed-shape graph backend when a full prefill graph is requested.
         result["speculation"] = "none"
         result["tokenizer"] = None
-        result["cudagraph_mode"] = "FULL_DECODE_ONLY"
+        full = os.getenv("KAILLM_INKLING_FULL_GRAPHS") == "1" or bool(os.getenv("KAILLM_BENCHMARK_GRAPH_DIR"))
+        result["cudagraph_mode"] = "FULL" if full else "FULL_DECODE_ONLY"
+        if full:
+            result["environment"] = {"KAILLM_INKLING_FULL_GRAPHS": "1"}
         result["itq"] = any(name.startswith("itq.table.") for name in names)
     return result

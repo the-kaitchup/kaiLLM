@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, Any
 
 import torch
@@ -287,11 +288,34 @@ class NgramGPUSpeculator(BaseSpeculator):
             device=device,
         )
 
+        self._lookup_graphs = {}
+        self._graph_observer = None
+
     def init_cudagraph_manager(self, cudagraph_mode: CUDAGraphMode) -> None:
         del cudagraph_mode
 
     def capture(self) -> None:
-        return None
+        if not os.environ.get("KAILLM_BENCHMARK_GRAPH_DIR"):
+            return
+        # The two persistent state tensors are updated in-place by the runner.
+        # Batch order and per-step sample counts change and need staging buffers.
+        self._lookup_graphs.clear()
+        self._indices = torch.arange(self.max_num_reqs, dtype=torch.int64, device=self.device)
+        self._sampled = torch.zeros(self.max_num_reqs, dtype=torch.int32, device=self.device)
+        with torch.cuda.device(self.device):
+            for rows in range(1, self.max_num_reqs + 1):
+                args = (rows, self._indices, self._sampled, self.req_states.last_sampled_tokens)
+                self._lookup(*args)  # compile Triton before graph capture
+                graph = torch.cuda.CUDAGraph()
+                with torch.cuda.graph(graph):
+                    self._lookup(*args)
+                self._lookup_graphs[rows] = graph
+
+    def install_benchmark_graphs(self, observer):
+        if set(self._lookup_graphs) != set(range(1, self.max_num_reqs + 1)):
+            raise RuntimeError("GPU n-gram lookup graphs must cover every active batch size")
+        self._graph_observer = observer
+        return len(self._lookup_graphs)
 
     @torch.inference_mode()
     def propose(
@@ -318,10 +342,22 @@ class NgramGPUSpeculator(BaseSpeculator):
         if dummy_run:
             return self.drafts[:num_reqs]
 
+        idx_mapping = input_batch.idx_mapping
+        if self._graph_observer is None:
+            self._lookup(num_reqs, idx_mapping, num_sampled, last_sampled)
+        else:
+            graph = self._lookup_graphs.get(num_reqs)
+            if graph is None or last_sampled.data_ptr() != self.req_states.last_sampled_tokens.data_ptr():
+                self._graph_observer.draft_fallback("GPU n-gram proposal has no matching graph or request state")
+            self._indices[:num_reqs].copy_(idx_mapping[:num_reqs])
+            self._sampled[:num_reqs].copy_(num_sampled[:num_reqs])
+            graph.replay()
+            self._graph_observer.draft_replayed()
+        return self.drafts[:num_reqs]
+
+    def _lookup(self, num_reqs, idx_mapping, num_sampled, last_sampled):
         req_states = self.req_states
         token_ids = req_states.all_token_ids.gpu
-        idx_mapping = input_batch.idx_mapping
-
         _ngram_scan_kernel[(num_reqs, self.n_blocks)](
             token_ids,
             token_ids.stride(0),
@@ -369,4 +405,3 @@ class NgramGPUSpeculator(BaseSpeculator):
             num_warps=2,
             num_stages=1,
         )
-        return self.drafts[:num_reqs]

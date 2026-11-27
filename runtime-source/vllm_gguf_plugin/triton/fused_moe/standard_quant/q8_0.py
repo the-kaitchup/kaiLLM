@@ -17,7 +17,16 @@ from ..utils import (
 )
 
 
-@triton.jit
+def _q8_kernel_name(specialization):
+    tile = specialization.constants["BLOCK_M"]
+    if tile in (16, 32) and specialization.constants["BLOCK_N"] == 64:
+        return f"q8_0_moe_kernel_m{tile}_n64"
+    if tile == 4 and specialization.constants["BLOCK_N"] in (16, 32, 64):
+        return f"q8_0_moe_kernel_m4_n{specialization.constants['BLOCK_N']}"
+    return "q8_0_moe_kernel"
+
+
+@triton.jit(repr=_q8_kernel_name)
 def q8_0_moe_kernel(
     x_ptr,
     w_u8_ptr,

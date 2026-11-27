@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Inkling 2 Mini (`inkling2_loop`, llama.cpp master layout) metadata and tokenizer from GGUF.
+"""Inkling 2 Mini fixed-loop metadata and tokenizer from GGUF.
 
 config.json uses Inkling2LoopConfig's fields (vllm-overrides/.../configs/inkling2_loop.py); tokenizer.json is the
 GGUF's byte-level BPE (tokenizer.ggml.pre == "inkling2", llama.cpp's GPT-4o pre-tokenizer regex)."""
@@ -41,9 +41,43 @@ def _first(v):
     return int(v[0]) if isinstance(v, (list, tuple, np.ndarray)) else int(v)
 
 
+def legacy_loop_metadata(md):
+    """Translate Unsloth's fixed-loop GGUF (logical blocks) to the physical-layer config."""
+    aliases = {"loop.core_start": "loop.start", "loop.core_end": "loop.end", "num_loops": "loop.count"}
+    result = {k: v for k, v in md.items() if not k.startswith("inkling2.")}
+    for key, value in md.items():
+        if key.startswith("inkling2."):
+            name = key.removeprefix("inkling2.")
+            result[f"{ARCH}.{aliases.get(name, name)}"] = value
+    result["general.architecture"] = ARCH
+    start, end, passes, logical = (int(_req(result, k)) for k in ("loop.start", "loop.end", "loop.count", "block_count"))
+    physical = logical - (passes - 1) * (end - start)
+    residual_block = int(_req(result, "attn_res.block_size"))
+    rank = int(_req(result, "loop.gate_rank"))
+    if (passes < 2 or rank < 1 or residual_block < 1 or not 0 < start < end <= physical
+            or start % residual_block or end % residual_block):
+        raise ValueError("Invalid physical block count or loop bounds in inkling2 GGUF")
+    visits = list(range(start)) + list(range(start, end)) * passes + list(range(end, physical))
+    for name in ("attention.head_count", "attention.head_count_kv", "attention.sliding_window_pattern"):
+        schedule = _req(result, name)
+        if not isinstance(schedule, (list, tuple, np.ndarray)):
+            continue
+        schedule = list(schedule)
+        if len(schedule) != logical:
+            raise ValueError(f"Wrong number of logical Inkling entries for {name}")
+        unique = schedule[:end] + schedule[start + (end - start) * passes:]
+        if [unique[i] for i in visits] != schedule:
+            raise ValueError(f"Loop visits have inconsistent Inkling metadata for {name}")
+        result[f"{ARCH}.{name}"] = unique
+    result[f"{ARCH}.block_count"] = physical
+    return result
+
+
 def inkling_config_dict(md: dict) -> dict:
+    if md.get("general.architecture") == "inkling2" and "inkling2.num_loops" in md:
+        md = legacy_loop_metadata(md)
     if md.get("general.architecture") != ARCH:
-        raise ValueError("Expected an inkling2_loop GGUF checkpoint (llama.cpp master layout)")
+        raise ValueError("Expected a fixed-loop Inkling GGUF checkpoint")
     n_layers = int(_req(md, "block_count"))
     heads, heads_kv = _req(md, "attention.head_count"), _req(md, "attention.head_count_kv")
     for v in (heads, heads_kv):
@@ -129,11 +163,12 @@ def inkling_generation_config(md: dict) -> dict:
 
 
 def prepare_inkling_metadata(model, cache_dir=None):
-    """Write config.json, generation_config.json and tokenizer files for an inkling2_loop GGUF; None when `model` is
-    something else."""
+    """Write config and tokenizer files for a supported fixed-loop Inkling GGUF."""
     shards = resolve_gguf_shards(model)
     reader = gguf.GGUFReader(str(shards[0]))
     md = read_gguf_metadata(reader)
+    if md.get("general.architecture") == "inkling2" and "inkling2.num_loops" in md:
+        md = legacy_loop_metadata(md)
     if md.get("general.architecture") != ARCH:
         return None
     key = hashlib.sha256(json.dumps([str(Path(shards[0]).resolve()), os.path.getsize(shards[0]),

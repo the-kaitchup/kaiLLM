@@ -13,6 +13,8 @@ from ...gemm.utils import (
     load_u32_from_u8,
 )
 from ..utils import (
+    TRITON_FUSED_MOE_BLOCK_M,
+    TRITON_FUSED_MOE_BLOCK_N,
     load_moe_token_info,
     load_moe_x_chunk,
     run_triton_fused_moe_kernel,
@@ -139,6 +141,9 @@ def ggml_moe_iq3_xxs_triton(
     row: int,
     top_k: int,
     tokens: int,
+    *,
+    block_m: int = TRITON_FUSED_MOE_BLOCK_M,
+    block_n: int = TRITON_FUSED_MOE_BLOCK_N,
 ) -> torch.Tensor:
     tables = get_iq_table_tensors(W.device)
     return run_triton_fused_moe_kernel(
@@ -153,4 +158,6 @@ def ggml_moe_iq3_xxs_triton(
         tokens,
         GGML_TYPE_IQ3_XXS,
         extra_args=(tables["iq3xxs_grid"], tables["ksigns_iq2xs"]),
+        block_m=block_m,
+        block_n=block_n,
     )

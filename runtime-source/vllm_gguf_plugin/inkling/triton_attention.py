@@ -21,16 +21,21 @@ import torch
 import triton
 import triton.language as tl
 
+from . import chima_verifier, spark_verify_router
+
 
 @triton.jit
 def _rel_attn_kernel(Q, CACHE, BT, SEQ, QSL, TILES, P, OUT,
                      stride_qt, stride_qh, stride_cb, stride_ch, stride_cn, stride_bt, stride_ot, stride_oh,
-                     scale, window, E,
-                     H: tl.constexpr, G: tl.constexpr, D: tl.constexpr, PAGE: tl.constexpr,
+                     scale, window, E, first_kv_head,
+                     BIAS_HEADS: tl.constexpr, G: tl.constexpr, D: tl.constexpr, PAGE: tl.constexpr,
                      BLOCK_M: tl.constexpr, BLOCK_N: tl.constexpr):
     tile = tl.program_id(0)
-    kvh = tl.program_id(1)
+    local_kvh = tl.program_id(1)
+    kvh = first_kv_head + local_kvh
     req = tl.load(TILES + 2 * tile)
+    if req < 0:
+        return
     q0 = tl.load(TILES + 2 * tile + 1)
     q_start = tl.load(QSL + req)
     q_len = tl.load(QSL + req + 1) - q_start
@@ -56,7 +61,7 @@ def _rel_attn_kernel(Q, CACHE, BT, SEQ, QSL, TILES, P, OUT,
     k_begin = 0
     if window > 0:
         k_begin = tl.maximum(0, ctx + q0 - window + 1)
-    p_row = P + (tglob * H + head) * (E + 1)
+    p_row = P + (tglob * BIAS_HEADS + local_kvh * G + hg) * (E + 1)
     bt_row = BT + req.to(tl.int64) * stride_bt
     offs_n = tl.arange(0, BLOCK_N)
     for k0 in range(k_begin, k_end, BLOCK_N):
@@ -90,16 +95,25 @@ def _rel_attn_split_kernel(Q, CACHE, BT, SEQ, QSL, P, ML, ACC,
                            stride_qt, stride_qh, stride_cb, stride_ch, stride_cn, stride_bt,
                            scale, window, E,
                            H: tl.constexpr, G: tl.constexpr, D: tl.constexpr, PAGE: tl.constexpr, S: tl.constexpr,
-                           BLOCK_M: tl.constexpr, BLOCK_N: tl.constexpr):
+                           BLOCK_M: tl.constexpr, BLOCK_N: tl.constexpr, WIDTH: tl.constexpr = 1):
     """Decode (one query token per request, 0 for padding): keys of request pid0 / KV head pid1 split in S chunks;
     chunk pid2 writes its unnormalised softmax state (m, l, acc) for the G heads; the sink enters in the reduce."""
-    req = tl.program_id(0)
+    req = tl.program_id(0) // WIDTH
     kvh = tl.program_id(1)
     split = tl.program_id(2)
     q_start = tl.load(QSL + req)
     q_len = tl.load(QSL + req + 1) - q_start
     seq_len = tl.load(SEQ + req)
     ctx = seq_len - q_len
+    slot_row = req
+    if WIDTH > 1:
+        pos = tl.program_id(0) % WIDTH
+        if pos >= q_len:
+            return
+        q_start += pos
+        ctx += pos
+        seq_len = ctx + 1
+        slot_row = q_start
     rows = tl.arange(0, BLOCK_M)
     row_ok = (rows < G) & (q_len > 0)
     head = kvh * G + rows
@@ -142,7 +156,7 @@ def _rel_attn_split_kernel(Q, CACHE, BT, SEQ, QSL, P, ML, ACC,
         l_i = l_i * alpha + tl.sum(p, axis=1)
         acc = acc * alpha[:, None] + tl.dot(p.to(q.dtype), v.to(q.dtype), out_dtype=tl.float32)
         m_i = m_new
-    slot = (req.to(tl.int64) * H + head) * S + split
+    slot = (slot_row.to(tl.int64) * H + head) * S + split
     tl.store(ML + 2 * slot, m_i, mask=rows < G)
     tl.store(ML + 2 * slot + 1, l_i, mask=rows < G)
     tl.store(ACC + slot[:, None] * D + offs_d[None, :], acc, mask=(rows < G)[:, None])
@@ -150,17 +164,24 @@ def _rel_attn_split_kernel(Q, CACHE, BT, SEQ, QSL, P, ML, ACC,
 
 @triton.jit
 def _rel_attn_split_reduce(ML, ACC, QSL, OUT, stride_ot, stride_oh,
-                           H: tl.constexpr, D: tl.constexpr, S: tl.constexpr):
+                           H: tl.constexpr, D: tl.constexpr, S: tl.constexpr, WIDTH: tl.constexpr = 1):
     """out = (sum_s acc_s e^(m_s - M)) / (e^(0 - M) + sum_s l_s e^(m_s - M)), M = max(0, m_s): the sink is a zero
     logit with a zero value."""
-    req = tl.program_id(0)
+    req = tl.program_id(0) // WIDTH
     head = tl.program_id(1)
     q_start = tl.load(QSL + req)
     q_len = tl.load(QSL + req + 1) - q_start
+    slot_row = req
+    if WIDTH > 1:
+        pos = tl.program_id(0) % WIDTH
+        if pos >= q_len:
+            return
+        q_start += pos
+        slot_row = q_start
     if q_len > 0:
         offs_s = tl.arange(0, S)
         offs_d = tl.arange(0, D)
-        slot = (req.to(tl.int64) * H + head) * S + offs_s
+        slot = (slot_row.to(tl.int64) * H + head) * S + offs_s
         m = tl.load(ML + 2 * slot)
         l = tl.load(ML + 2 * slot + 1)
         big = tl.maximum(tl.max(m, axis=0), 0.0)
@@ -173,31 +194,42 @@ def _rel_attn_split_reduce(ML, ACC, QSL, OUT, stride_ot, stride_oh,
 
 BLOCK_M = 64
 BLOCK_N = 64
+# Prefill can require a 192 MiB relative-bias matrix. Splitting by KV head
+# retains each query's complete attention window and bounds temporary memory.
+PREFILL_BIAS_BYTES = 64 << 20
 # decode: keys split in SPLITS chunks per (request, KV head) (flash-decoding), a fixed count so the grid does not depend
 # on the context (CUDA graphs); KAILLM_INKLING_SPLITS=0 keeps the one-program-per-(request, KV head) kernel
 SPLITS = int(os.environ.get("KAILLM_INKLING_SPLITS", "16"))
+SPARK_VERIFY_ROW_BIAS = os.environ.get("KAILLM_SPARK_DSPARK5_ROW_BIAS") == "1"
 FP8_QUERIES = os.environ.get("KAILLM_INKLING_FP8_QUERIES") == "1"
 
 
-def tiles_for(md, G: int):
-    """int32 [n, 2] (request, first local query token) tiles of the batch, cached on the metadata object.  Decode-only
-    batches use the builder's persistent (request, 0) tiles (one token per request: any G)."""
+def tiles_for(md, G: int, tokens: int):
+    """Build a fixed-size tile table from the runner's live device query offsets."""
     fixed = getattr(md, "tiles", None)
     if fixed is not None:
         return fixed
-    cache = getattr(md, "_inkling_tiles", None)
-    if cache is not None and cache[0] == G:
-        return cache[1]
-    tq = BLOCK_M // G
-    qsl = md.query_start_loc_cpu.tolist()
-    tiles = []
-    for r in range(md.num_reqs):
-        n = qsl[r + 1] - qsl[r]
-        for q0 in range(0, n, tq):
-            tiles.append((r, q0))
-    t = torch.tensor(tiles or [(0, 0)], dtype=torch.int32).to(md.query_start_loc.device, non_blocking=True)
-    md._inkling_tiles = (G, t)
-    return t
+    cache = {}
+    if md.query_start_loc.is_cuda:
+        from .conv_graph import forward_plan_cache
+        cache = forward_plan_cache()
+    key = ("attention", id(md), G, tokens)
+    if key in cache:
+        return cache[key]
+    width = BLOCK_M // G
+    offsets = md.query_start_loc
+    requests = offsets.shape[0] - 1
+    counts = (offsets[1:] - offsets[:-1] + width - 1) // width
+    ends = torch.cumsum(counts, dim=0, dtype=torch.int32)
+    # sum(ceil(length / width)) <= ceil(total / width) + requests - 1.
+    size = triton.cdiv(tokens, width) + requests - 1
+    indices = torch.arange(size, device=offsets.device, dtype=torch.int32)
+    owner = torch.searchsorted(ends, indices, right=True, out_int32=True)
+    safe_owner = owner.clamp_max(requests - 1).long()
+    first = (indices - (ends - counts)[safe_owner]) * width
+    table = torch.stack((torch.where(owner < requests, owner, -1), first), dim=1)
+    cache[key] = table
+    return table
 
 
 def bias_table(rel, bias, sink):
@@ -214,12 +246,16 @@ def bias_table(rel, bias, sink):
     return P.sub_(sink[..., None]).contiguous()          # sink in any float dtype: widened inside the sub
 
 
+def verification_bias_table(rel, bias, sink):
+    """Preserve the one-token FP32 relative-bias GEMM shape for each verifier row."""
+    return torch.cat([bias_table(rel[i:i+1], bias, sink[i:i+1]) for i in range(rel.shape[0])], dim=0)
+
+
 def rel_attention_triton(q, rel, sink, bias, positions, cache, md, scale: float, window, extent: int):
     """q [T, H, D], rel [T, H, n_rel], sink [T, H], bias [extent, n_rel]; cache [B, Hkv, bs, 2D] -> [T, H, D] f32."""
     T, H, D = q.shape
     Hkv = cache.shape[1]
     G = H // Hkv
-    P = bias_table(rel, bias, sink)
     if cache.dtype == torch.uint8:
         cache = cache.view(torch.float8_e4m3fn)
     # queries, scores and probabilities in BF16 (an FP8 cache is widened exactly in the kernel);
@@ -231,24 +267,44 @@ def rel_attention_triton(q, rel, sink, bias, positions, cache, md, scale: float,
     out = torch.empty(T, H, D, dtype=torch.float32, device=q.device)
     bt = md.block_table
     decode = getattr(md, "tiles", None) is not None
-    block_m = max(16, triton.next_power_of_2(G)) if decode else BLOCK_M      # decode: G valid rows per tile
-    if decode and SPLITS > 1:
-        R = md.tiles.shape[0]
+    width = getattr(md, 'verify_width', 1)
+    serial_attention = decode or width > 1 and SPLITS > 1
+    block_m = max(16, triton.next_power_of_2(G)) if serial_attention else BLOCK_M
+    if serial_attention and SPLITS > 1 and not getattr(md, "one_pass_decode", False):
+        if width > 1 and 1 < T <= 6 and md.num_reqs == 1 and (
+            chima_verifier.active() or (SPARK_VERIFY_ROW_BIAS and width == T and spark_verify_router.active())
+        ):
+            P = verification_bias_table(rel, bias, sink)
+        else:
+            P = bias_table(rel, bias, sink)
+        # One verifier query sees exactly the K/V prefix, partitions and BF16
+        # probability rounding that a standalone target decode would see.
+        requests = md.num_reqs if width > 1 else md.tiles.shape[0]
+        rows = T if width > 1 else requests
         S = triton.next_power_of_2(SPLITS)
-        ml = torch.empty(R, H, S, 2, dtype=torch.float32, device=q.device)
-        acc = torch.empty(R, H, S, D, dtype=torch.float32, device=q.device)
-        _rel_attn_split_kernel[(R, Hkv, S)](
+        ml = torch.empty(rows, H, S, 2, dtype=torch.float32, device=q.device)
+        acc = torch.empty(rows, H, S, D, dtype=torch.float32, device=q.device)
+        _rel_attn_split_kernel[(requests * width, Hkv, S)](
             q, cache, bt, md.seq_lens, md.query_start_loc, P, ml, acc,
             q.stride(0), q.stride(1), cache.stride(0), cache.stride(1), cache.stride(2), bt.stride(0),
             float(scale), int(window or 0), int(extent),
-            H=H, G=G, D=D, PAGE=cache.shape[2], S=S, BLOCK_M=block_m, BLOCK_N=BLOCK_N, num_warps=4, num_stages=2)
-        _rel_attn_split_reduce[(R, H)](ml, acc, md.query_start_loc, out, out.stride(0), out.stride(1),
-                                       H=H, D=D, S=S, num_warps=4)
+            H=H, G=G, D=D, PAGE=cache.shape[2], S=S, BLOCK_M=block_m, BLOCK_N=BLOCK_N, WIDTH=width,
+            num_warps=4, num_stages=2)
+        _rel_attn_split_reduce[(requests * width, H)](ml, acc, md.query_start_loc, out, out.stride(0), out.stride(1),
+                                                      H=H, D=D, S=S, WIDTH=width, num_warps=4)
         return out
-    tiles = tiles_for(md, G)
-    _rel_attn_kernel[(tiles.shape[0], Hkv)](
-        q, cache, bt, md.seq_lens, md.query_start_loc, tiles, P, out,
-        q.stride(0), q.stride(1), cache.stride(0), cache.stride(1), cache.stride(2), bt.stride(0),
-        out.stride(0), out.stride(1), float(scale), int(window or 0), int(extent),
-        H=H, G=G, D=D, PAGE=cache.shape[2], BLOCK_M=block_m, BLOCK_N=BLOCK_N, num_warps=4, num_stages=2)
+    tiles = tiles_for(md, G, T)
+    bytes_per_kv_head = max(1, T * G * (extent + 1) * 4)
+    group = Hkv if decode else min(Hkv, max(1, PREFILL_BIAS_BYTES // bytes_per_kv_head))
+    for first in range(0, Hkv, group):
+        count = min(group, Hkv - first)
+        query_heads = slice(first * G, (first + count) * G)
+        P = bias_table(rel[:, query_heads], bias, sink[:, query_heads])
+        _rel_attn_kernel[(tiles.shape[0], count)](
+            q, cache, bt, md.seq_lens, md.query_start_loc, tiles, P, out,
+            q.stride(0), q.stride(1), cache.stride(0), cache.stride(1), cache.stride(2), bt.stride(0),
+            out.stride(0), out.stride(1), float(scale), int(window or 0), int(extent), first,
+            BIAS_HEADS=count * G, G=G, D=D, PAGE=cache.shape[2], BLOCK_M=block_m, BLOCK_N=BLOCK_N,
+            num_warps=4, num_stages=2)
+        del P  # The next GEMM can reuse this group's workspace on the same CUDA stream.
     return out

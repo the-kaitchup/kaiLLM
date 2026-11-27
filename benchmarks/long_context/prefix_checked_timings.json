@@ -1,0 +1,680 @@
+[
+  {
+    "protocol": "8k64k-v1",
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "driver": [
+      "595.99.02"
+    ],
+    "power_limit_w": [
+      "300.00"
+    ],
+    "checkpoint": "inkling-udq2",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "engine": "kaiLLM",
+    "kai_source": "c6f22a6f3e853490dd38abcfa5b163c1b55ffbe2",
+    "llama_source": null,
+    "engine_revision": "30d31e1c1656e04b99f4f04f2b1964756bd84a567179664bd977397b5a8c9dba",
+    "mode": "dspark5",
+    "batch": 1,
+    "domain": "code",
+    "requested_context_per_slot": 73728,
+    "prompt_set_sha256": "7dbd3a32d998ffc2ad244fcec424ec02111cf785b4859788fd3ef0668dd91548",
+    "input_tokens_per_request": 8192,
+    "output_tokens_per_request": 65536,
+    "prefill_seconds": [
+      31.930018653016305,
+      31.96277721200022,
+      31.98651491702185
+    ],
+    "full_seconds": 1234.766167630005,
+    "generated_text_hashes": [
+      "b62c2359550e2160a9d987a4bc4e8ef549856a3e55fe399772827265f3667ee6"
+    ],
+    "timestamp_utc": "2026-11-24T18:32:08Z",
+    "cuda_graphs": {
+      "prefill": {
+        "graph_replays": 16,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "prefill-1": [
+            4
+          ],
+          "prefill-2": [
+            4
+          ],
+          "prefill-3": [
+            4
+          ],
+          "full": [
+            4
+          ]
+        }
+      },
+      "decode": {
+        "graph_replays": 11728,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "full": [
+            11728
+          ]
+        }
+      }
+    },
+    "target_head_cuda_graphs": {
+      "prefill": {
+        "graph_replays": 16,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "prefill-1": [
+            4
+          ],
+          "prefill-2": [
+            4
+          ],
+          "prefill-3": [
+            4
+          ],
+          "full": [
+            4
+          ]
+        }
+      },
+      "decode": {
+        "graph_replays": 11728,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "full": [
+            11728
+          ]
+        }
+      },
+      "pipeline_stages": 1,
+      "device_ranks": [
+        0
+      ]
+    },
+    "drafter_cuda_graphs": {
+      "proposals": 11744,
+      "completed_proposals": 11744,
+      "graph_replays": 11857,
+      "eager_steps": 0,
+      "unclassified_steps": 0,
+      "scope": "timed-wave",
+      "device_ranks": [
+        0
+      ],
+      "per_wave_by_rank": {
+        "prefill-1": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "prefill-2": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "prefill-3": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "full": [
+          {
+            "proposals": 11732,
+            "completed_proposals": 11732,
+            "graph_replays": 11761
+          }
+        ]
+      }
+    },
+    "kai_kv": {
+      "bytes_per_device": 3946840064,
+      "full_context_sequences": 1.0006646050347223
+    },
+    "kai_humming_deterministic": true,
+    "drafter": {
+      "repo": "AtomicChat/Inkling-2-Mini-GGUF",
+      "revision": "309509848b3151419aa26d069eb03db57fd29a00",
+      "filename": "dspark-Inkling-2-Mini-Q8_0.gguf",
+      "sha256": "f51f32d3fb4dca9ca2f094e447b80741caac0a3445ec02af02a8cc3c86e45992"
+    },
+    "kai_dspark": {
+      "scope": "full-wave",
+      "proposed": 58638,
+      "accepted": 53807,
+      "rejected": 4831
+    },
+    "numerical_scope_sha256": "cf31d0860383a804f8b7170d5e1b242da93c923ca05eadb179bd250b9b881081",
+    "raw_sha256": "38679f01f6743e0e63ec94fb51fe68cf05e0e8bd4113547f8757b64d58d49fea"
+  },
+  {
+    "protocol": "8k64k-v1",
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "driver": [
+      "595.99.02"
+    ],
+    "power_limit_w": [
+      "300.00"
+    ],
+    "checkpoint": "inkling-udq2",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "engine": "kaiLLM",
+    "kai_source": "fcebd21c594e763e91abea1c49714a8118e88119",
+    "llama_source": null,
+    "engine_revision": "65919bd124bd0b703509ec320269d1db534af3d63844107c09db27ae960e455e",
+    "mode": "dspark5",
+    "batch": 1,
+    "domain": "prose",
+    "requested_context_per_slot": 73728,
+    "prompt_set_sha256": "b7f9b13eb10e81a78b0f44e8640ccb635f20053c7ecdb7faa72f33dacabc97e0",
+    "input_tokens_per_request": 8192,
+    "output_tokens_per_request": 65536,
+    "prefill_seconds": [
+      6.515839895000681,
+      6.514076527004363,
+      6.51611932500964
+    ],
+    "full_seconds": 669.4015294879791,
+    "generated_text_hashes": [
+      "df3804e8a04a2ca65141896fc5deb6e7d22d1b466b637f9975dec9d313eff2da"
+    ],
+    "timestamp_utc": "2026-11-24T20:01:21Z",
+    "cuda_graphs": {
+      "prefill": {
+        "graph_replays": 16,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "prefill-1": [
+            4
+          ],
+          "prefill-2": [
+            4
+          ],
+          "prefill-3": [
+            4
+          ],
+          "full": [
+            4
+          ]
+        }
+      },
+      "decode": {
+        "graph_replays": 13196,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "full": [
+            13196
+          ]
+        }
+      }
+    },
+    "target_head_cuda_graphs": {
+      "prefill": {
+        "graph_replays": 16,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "prefill-1": [
+            4
+          ],
+          "prefill-2": [
+            4
+          ],
+          "prefill-3": [
+            4
+          ],
+          "full": [
+            4
+          ]
+        }
+      },
+      "decode": {
+        "graph_replays": 13196,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "full": [
+            13196
+          ]
+        }
+      },
+      "pipeline_stages": 1,
+      "device_ranks": [
+        0
+      ]
+    },
+    "drafter_cuda_graphs": {
+      "proposals": 13212,
+      "completed_proposals": 13212,
+      "graph_replays": 13325,
+      "eager_steps": 0,
+      "unclassified_steps": 0,
+      "scope": "timed-wave",
+      "device_ranks": [
+        0
+      ],
+      "per_wave_by_rank": {
+        "prefill-1": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "prefill-2": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "prefill-3": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "full": [
+          {
+            "proposals": 13200,
+            "completed_proposals": 13200,
+            "graph_replays": 13229
+          }
+        ]
+      }
+    },
+    "kai_kv": {
+      "bytes_per_device": 3946840064,
+      "full_context_sequences": 1.0006646050347223
+    },
+    "kai_humming_deterministic": true,
+    "drafter": {
+      "repo": "AtomicChat/Inkling-2-Mini-GGUF",
+      "revision": "309509848b3151419aa26d069eb03db57fd29a00",
+      "filename": "dspark-Inkling-2-Mini-Q8_0.gguf",
+      "sha256": "f51f32d3fb4dca9ca2f094e447b80741caac0a3445ec02af02a8cc3c86e45992"
+    },
+    "kai_dspark": {
+      "scope": "full-wave",
+      "proposed": 65976,
+      "accepted": 52339,
+      "rejected": 13637
+    },
+    "numerical_scope_sha256": "de4191a4a847653827da7602bcd5062f772a11ad9646cef89dfce5cd2ab7ce95",
+    "packed_expert_proof_sha256": "e538092bc14b6cb52211052f916389bd0df967ff980fb27ef85acb2827249c1a",
+    "raw_sha256": "89cdfea7972ce3d205087a1166da810efec870a30203e899dfb70e3101868fd8"
+  },
+  {
+    "protocol": "8k64k-v1",
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "driver": [
+      "595.99.02"
+    ],
+    "power_limit_w": [
+      "300.00"
+    ],
+    "checkpoint": "inkling-udq2",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "engine": "kaiLLM",
+    "kai_source": "c6f22a6f3e853490dd38abcfa5b163c1b55ffbe2",
+    "llama_source": null,
+    "engine_revision": "30d31e1c1656e04b99f4f04f2b1964756bd84a567179664bd977397b5a8c9dba",
+    "mode": "dspark5",
+    "batch": 1,
+    "domain": "prose",
+    "requested_context_per_slot": 73728,
+    "prompt_set_sha256": "b7f9b13eb10e81a78b0f44e8640ccb635f20053c7ecdb7faa72f33dacabc97e0",
+    "input_tokens_per_request": 8192,
+    "output_tokens_per_request": 65536,
+    "prefill_seconds": [
+      31.98749681399204,
+      32.00052385200979,
+      32.00403879900114
+    ],
+    "full_seconds": 1300.495350105979,
+    "generated_text_hashes": [
+      "df3804e8a04a2ca65141896fc5deb6e7d22d1b466b637f9975dec9d313eff2da"
+    ],
+    "timestamp_utc": "2026-11-24T18:09:23Z",
+    "cuda_graphs": {
+      "prefill": {
+        "graph_replays": 16,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "prefill-1": [
+            4
+          ],
+          "prefill-2": [
+            4
+          ],
+          "prefill-3": [
+            4
+          ],
+          "full": [
+            4
+          ]
+        }
+      },
+      "decode": {
+        "graph_replays": 13196,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "full": [
+            13196
+          ]
+        }
+      }
+    },
+    "target_head_cuda_graphs": {
+      "prefill": {
+        "graph_replays": 16,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "prefill-1": [
+            4
+          ],
+          "prefill-2": [
+            4
+          ],
+          "prefill-3": [
+            4
+          ],
+          "full": [
+            4
+          ]
+        }
+      },
+      "decode": {
+        "graph_replays": 13196,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "full": [
+            13196
+          ]
+        }
+      },
+      "pipeline_stages": 1,
+      "device_ranks": [
+        0
+      ]
+    },
+    "drafter_cuda_graphs": {
+      "proposals": 13212,
+      "completed_proposals": 13212,
+      "graph_replays": 13325,
+      "eager_steps": 0,
+      "unclassified_steps": 0,
+      "scope": "timed-wave",
+      "device_ranks": [
+        0
+      ],
+      "per_wave_by_rank": {
+        "prefill-1": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "prefill-2": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "prefill-3": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "full": [
+          {
+            "proposals": 13200,
+            "completed_proposals": 13200,
+            "graph_replays": 13229
+          }
+        ]
+      }
+    },
+    "kai_kv": {
+      "bytes_per_device": 3946840064,
+      "full_context_sequences": 1.0006646050347223
+    },
+    "kai_humming_deterministic": true,
+    "drafter": {
+      "repo": "AtomicChat/Inkling-2-Mini-GGUF",
+      "revision": "309509848b3151419aa26d069eb03db57fd29a00",
+      "filename": "dspark-Inkling-2-Mini-Q8_0.gguf",
+      "sha256": "f51f32d3fb4dca9ca2f094e447b80741caac0a3445ec02af02a8cc3c86e45992"
+    },
+    "kai_dspark": {
+      "scope": "full-wave",
+      "proposed": 65976,
+      "accepted": 52339,
+      "rejected": 13637
+    },
+    "numerical_scope_sha256": "cf31d0860383a804f8b7170d5e1b242da93c923ca05eadb179bd250b9b881081",
+    "raw_sha256": "aded291939c2ddef206dd281f2cfb0572634e6601319fdc88e9283efe9d93843"
+  },
+  {
+    "protocol": "8k64k-v1",
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "driver": [
+      "595.99.02"
+    ],
+    "power_limit_w": [
+      "300.00"
+    ],
+    "checkpoint": "inkling-udq2",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "engine": "kaiLLM",
+    "kai_source": "fcebd21c594e763e91abea1c49714a8118e88119",
+    "llama_source": null,
+    "engine_revision": "65919bd124bd0b703509ec320269d1db534af3d63844107c09db27ae960e455e",
+    "mode": "dspark5",
+    "batch": 1,
+    "domain": "code",
+    "requested_context_per_slot": 73728,
+    "prompt_set_sha256": "7dbd3a32d998ffc2ad244fcec424ec02111cf785b4859788fd3ef0668dd91548",
+    "input_tokens_per_request": 8192,
+    "output_tokens_per_request": 65536,
+    "prefill_seconds": [
+      6.5428555230028,
+      6.5510606479947455,
+      6.54916575900279
+    ],
+    "full_seconds": 597.3243162879953,
+    "generated_text_hashes": [
+      "b62c2359550e2160a9d987a4bc4e8ef549856a3e55fe399772827265f3667ee6"
+    ],
+    "timestamp_utc": "2026-11-24T20:11:46Z",
+    "cuda_graphs": {
+      "prefill": {
+        "graph_replays": 16,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "prefill-1": [
+            4
+          ],
+          "prefill-2": [
+            4
+          ],
+          "prefill-3": [
+            4
+          ],
+          "full": [
+            4
+          ]
+        }
+      },
+      "decode": {
+        "graph_replays": 11728,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "full": [
+            11728
+          ]
+        }
+      }
+    },
+    "target_head_cuda_graphs": {
+      "prefill": {
+        "graph_replays": 16,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "prefill-1": [
+            4
+          ],
+          "prefill-2": [
+            4
+          ],
+          "prefill-3": [
+            4
+          ],
+          "full": [
+            4
+          ]
+        }
+      },
+      "decode": {
+        "graph_replays": 11728,
+        "eager_steps": 0,
+        "unclassified_steps": 0,
+        "scope": "timed-wave",
+        "per_wave_by_rank": {
+          "full": [
+            11728
+          ]
+        }
+      },
+      "pipeline_stages": 1,
+      "device_ranks": [
+        0
+      ]
+    },
+    "drafter_cuda_graphs": {
+      "proposals": 11744,
+      "completed_proposals": 11744,
+      "graph_replays": 11857,
+      "eager_steps": 0,
+      "unclassified_steps": 0,
+      "scope": "timed-wave",
+      "device_ranks": [
+        0
+      ],
+      "per_wave_by_rank": {
+        "prefill-1": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "prefill-2": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "prefill-3": [
+          {
+            "proposals": 4,
+            "completed_proposals": 4,
+            "graph_replays": 32
+          }
+        ],
+        "full": [
+          {
+            "proposals": 11732,
+            "completed_proposals": 11732,
+            "graph_replays": 11761
+          }
+        ]
+      }
+    },
+    "kai_kv": {
+      "bytes_per_device": 3946840064,
+      "full_context_sequences": 1.0006646050347223
+    },
+    "kai_humming_deterministic": true,
+    "drafter": {
+      "repo": "AtomicChat/Inkling-2-Mini-GGUF",
+      "revision": "309509848b3151419aa26d069eb03db57fd29a00",
+      "filename": "dspark-Inkling-2-Mini-Q8_0.gguf",
+      "sha256": "f51f32d3fb4dca9ca2f094e447b80741caac0a3445ec02af02a8cc3c86e45992"
+    },
+    "kai_dspark": {
+      "scope": "full-wave",
+      "proposed": 58638,
+      "accepted": 53807,
+      "rejected": 4831
+    },
+    "numerical_scope_sha256": "de4191a4a847653827da7602bcd5062f772a11ad9646cef89dfce5cd2ab7ce95",
+    "packed_expert_proof_sha256": "e538092bc14b6cb52211052f916389bd0df967ff980fb27ef85acb2827249c1a",
+    "raw_sha256": "d3ce2e00f772ec9442883f50e4559e5b23249f7bedf985b8e33e9070f96f5d6a"
+  }
+]

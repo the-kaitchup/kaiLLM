@@ -16,6 +16,8 @@ import sys
 import sysconfig
 import tempfile
 
+from .cuda_host_compiler import check_host_compiler
+
 
 def _managed_command(target):
     target = Path(target)
@@ -203,7 +205,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--patchelf", required=True)
     args = parser.parse_args()
-    print(json.dumps(install(args.patchelf), indent=2))
+    receipt = install(args.patchelf)
+    compiler = check_host_compiler(os.environ, cuda_home=receipt["cuda_linker_layout"]["CUDA_HOME"])
+    if compiler is not None and compiler["status"] != "explicit":
+        print("kaiLLM: " + compiler["message"], file=sys.stderr)
+    print(json.dumps(receipt, indent=2))
 
 
 if __name__ == "__main__":

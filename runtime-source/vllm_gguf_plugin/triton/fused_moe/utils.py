@@ -247,6 +247,7 @@ def run_triton_fused_moe_kernel(
     block_k_blocks: int = TRITON_FUSED_MOE_BLOCK_K_BLOCKS,
     num_warps: int = TRITON_NUM_WARPS,
     num_stages: int = TRITON_NUM_STAGES,
+    **kernel_meta,
 ) -> torch.Tensor:
     (
         W,
@@ -303,5 +304,6 @@ def run_triton_fused_moe_kernel(
         BLOCK_K_BLOCKS=block_k_blocks,
         num_warps=num_warps,
         num_stages=num_stages,
+        **kernel_meta,
     )
     return out

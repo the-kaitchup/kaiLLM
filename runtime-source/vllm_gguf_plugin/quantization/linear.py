@@ -271,7 +271,7 @@ class GGUFLinearMethod(LinearMethodBase):
                 else:
                     parts.append((part, wtype))
         layer.gguf_humming = torch.nn.ModuleList(
-            prepare_gguf_humming(data, wtype, self.params_dtype)
+            prepare_gguf_humming(data, wtype, self.params_dtype, prefix=getattr(layer, "prefix", ""))
             for data, wtype in parts
         )
         logger.info_once(

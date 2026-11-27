@@ -10,6 +10,7 @@ zeros.  Decode-only batches: one Triton kernel per conv (triton_conv.py); other 
 from __future__ import annotations
 
 import os
+from types import SimpleNamespace
 
 import torch
 from torch import nn
@@ -30,7 +31,9 @@ class InklingConvState(nn.Module):
         self.channels, self.n_conv = channels, n_conv
         self.prefix, self.model_config, self.cache_config = prefix, model_config, cache_config
         self.kv_cache = (torch.tensor([]),)
-        ctx = get_current_vllm_config().compilation_config.static_forward_context
+        config = get_current_vllm_config()
+        self.num_spec_tokens = config.num_speculative_tokens
+        ctx = config.compilation_config.static_forward_context
         if prefix in ctx:
             raise ValueError(f"Duplicate layer name: {prefix}")
         ctx[prefix] = self
@@ -38,7 +41,7 @@ class InklingConvState(nn.Module):
     def get_state_shape(self):
         from vllm.model_executor.layers.mamba.mamba_utils import MambaStateShapeCalculator
         return MambaStateShapeCalculator.short_conv_state_shape(tp_world_size=1, intermediate_size=self.channels,
-                                                               conv_kernel=self.n_conv)
+                                                               conv_kernel=self.n_conv, num_spec=self.num_spec_tokens)
 
     def get_state_dtype(self):
         from vllm.model_executor.layers.mamba.mamba_utils import MambaStateDtypeCalculator
@@ -49,6 +52,12 @@ class InklingConvState(nn.Module):
     def mamba_type(self):
         from vllm.v1.attention.backends.registry import MambaAttentionBackendEnum
         return MambaAttentionBackendEnum.SHORT_CONV
+
+    def get_attn_backend(self):
+        if os.getenv("KAILLM_INKLING_FULL_GRAPHS") == "1" or os.getenv("KAILLM_BENCHMARK_GRAPH_DIR"):
+            from .conv_graph import conv_graph_backend
+            return conv_graph_backend()
+        return super().get_attn_backend()
 
     def metadata(self):
         from vllm.forward_context import get_forward_context
@@ -103,8 +112,13 @@ def batch_plan(md, T: int, n_conv: int, device):
     H1 = n_conv - 1
     starts, lens, sidx, init = [], [], [], []
     if nd:
-        starts.append(torch.arange(nd, device=device))
-        lens.append(torch.ones(nd, dtype=torch.long, device=device))
+        qd = md.query_start_loc_d
+        if qd is None:
+            starts.append(torch.arange(nd, device=device))
+            lens.append(torch.ones(nd, dtype=torch.long, device=device))
+        else:
+            starts.append(qd[:nd].long())
+            lens.append(torch.diff(qd[:nd + 1]).long())
         sidx.append(md.state_indices_tensor_d.reshape(nd, -1)[:, 0].long())
         init.append(torch.ones(nd, dtype=torch.bool, device=device))
     if npf:
@@ -125,7 +139,7 @@ def batch_plan(md, T: int, n_conv: int, device):
     j = torch.arange(H1, device=device)
     ntime = qlen[:, None] - H1 + j[None, :]                                # [R, n_conv - 1]
     new = torch.where(ntime >= 0, R * H1 + start[:, None] + ntime, torch.arange(R, device=device)[:, None] * H1 + H1 + ntime)
-    plan = dict(R=R, sidx=sidx, init=init, win=win, new=new)
+    plan = dict(R=R, sidx=sidx, init=init, win=win, new=new, start=start, lengths=qlen)
     md._inkling_conv_plan = ((T, n_conv), plan)
     return plan
 
@@ -140,11 +154,28 @@ def conv_step_batched(state: InklingConvState, x: torch.Tensor, weight: torch.Te
     H1 = n_conv - 1
     plan = batch_plan(md, T, n_conv, x.device)
     st = state.states()
-    hist = st[plan["sidx"], offset:offset + C, :].float().transpose(1, 2)          # [R, n_conv - 1, C] oldest first
+    storage = st[plan["sidx"], offset:offset + C, :].transpose(1, 2)
+    extended = storage.shape[1] > H1
+    if extended:
+        # The first query in each decode is always committed. The other queries
+        # are proposals; vLLM supplies the accepted prefix on the following step.
+        history_start = torch.zeros(plan["R"], device=x.device, dtype=torch.long)
+        accepted = md.num_accepted_tokens
+        if md.num_decodes and accepted is not None:
+            history_start[:md.num_decodes] = (accepted[:md.num_decodes].long() - 1).clamp_min(0)
+        rows = torch.arange(plan["R"], device=x.device)[:, None]
+        hist = storage[rows, history_start[:, None] + torch.arange(H1, device=x.device)].float()
+    else:
+        hist = storage.float()
     hist = hist * plan["init"][:, None, None]
     xs = x[:T].float()
     buf = torch.cat([hist.reshape(-1, C), xs], dim=0)
     win = buf[plan["win"]]                                                       # [T, n_conv, C]
+    if extended and md.num_decode_tokens and st.dtype != torch.float32:
+        # A serial decode stores each prior input at state precision, including
+        # past tokens from the current verify block. The current input stays FP32.
+        old_taps = win[:md.num_decode_tokens, :-1]
+        old_taps.copy_(old_taps.to(st.dtype).float())
     out = (win * weight.float().t()[None]).sum(1)
     if dynamic is not None:
         taps = dynamic[:T].float().view(T, n_heads, n_conv)                      # [T, h, lag]
@@ -155,7 +186,20 @@ def conv_step_batched(state: InklingConvState, x: torch.Tensor, weight: torch.Te
     res[:T] = ((xs + out) * scale).to(res.dtype)
     if x.shape[0] > T:
         res[T:] = 0
-    st[plan["sidx"], offset:offset + C, :] = buf[plan["new"]].transpose(1, 2).to(st.dtype)
+    if extended:
+        # For a verify chunk store history after the anchor plus all draft inputs.
+        # Prefill has already committed its entire chunk. Put that history at zero.
+        columns = torch.arange(storage.shape[1], device=x.device)[None, :]
+        consumed = torch.where(rows < md.num_decodes, 1, plan["lengths"][:, None])
+        relative = columns + consumed - H1
+        indices = torch.where(relative < 0, rows * H1 + H1 + relative,
+                              plan["R"] * H1 + plan["start"][:, None] + relative)
+        valid = relative < plan["lengths"][:, None]
+        new = buf[torch.where(valid, indices, 0)]
+        new = torch.where(valid[..., None], new, 0)
+    else:
+        new = buf[plan["new"]]
+    st[plan["sidx"], offset:offset + C, :] = new.transpose(1, 2).to(st.dtype)
     return res
 
 
@@ -169,6 +213,38 @@ def conv_step(state: InklingConvState, x: torch.Tensor, weight: torch.Tensor, of
     if md is None:                                       # profile run: one sequence from zeros
         hist = torch.zeros(state.n_conv - 1, C, dtype=torch.float32, device=x.device)
         return convolve(x, weight, hist, dynamic, n_heads)[0].to(odt)
+    from .conv_graph import ConvGraphMetadata, conv_mixed
+    if isinstance(md, ConvGraphMetadata):
+        if state.num_spec_tokens:
+            from .conv_graph import conv_spec_mixed
+            return conv_spec_mixed(state, x, weight, offset, md, dynamic, n_heads, odt)
+        if x.shape[0] == 1:
+            from .triton_conv import conv_decode
+            slots = md.slots()
+            return conv_decode(state.states(), x, weight, offset, slots, dynamic, n_heads, odt,
+                               seq_lens=md.seq_lens, offsets=md.offsets)
+        return conv_mixed(state, x, weight, offset, md, dynamic, n_heads, odt)
+    if state.states().shape[-1] > state.n_conv - 1:
+        if TRITON_DECODE and x.is_cuda and md.num_decodes:
+            from .triton_conv import conv_verify
+            if not md.num_prefills:
+                return conv_verify(state.states(), x, weight, offset, md, dynamic, n_heads, odt)
+            # The scheduler packs decode requests first. Use their ordinary target
+            # arithmetic even when a new request shares this verification step.
+            split = int(md.num_decode_tokens)
+            decode = conv_verify(state.states(), x[:split], weight, offset, md,
+                                 dynamic[:split] if dynamic is not None else None, n_heads, odt)
+            prefill = getattr(md, '_inkling_prefill_only', None)
+            if prefill is None:
+                prefill = SimpleNamespace(num_decodes=0, num_decode_tokens=0, num_prefills=md.num_prefills,
+                                          num_prefill_tokens=md.num_prefill_tokens, query_start_loc_p=md.query_start_loc_p,
+                                          state_indices_tensor_p=md.state_indices_tensor_p, has_initial_states_p=md.has_initial_states_p,
+                                          num_accepted_tokens=None)
+                md._inkling_prefill_only = prefill
+            rest = conv_step_batched(state, x[split:], weight, offset, prefill,
+                                     dynamic[split:] if dynamic is not None else None, n_heads, odt)
+            return torch.cat((decode, rest))
+        return conv_step_batched(state, x, weight, offset, md, dynamic, n_heads, odt)
     if BATCHED:
         nd = int(md.num_decodes)
         if (TRITON_DECODE and x.is_cuda and not int(md.num_prefills) and nd == x.shape[0]

@@ -394,7 +394,7 @@ def _pad_sorted(sorted_token_ids, expert_ids, block_m):
 
 
 def moe_new_type(X, W, sorted_token_ids, expert_ids, num_tokens_post_padded, quant_type: int, row: int, top_k: int,
-                 tokens: int, out_dtype=None):
+                 tokens: int, out_dtype=None, *, block_m: int = BLOCK_M):
     """X [tokens, K] (bf16 / f16), W uint8 [E, row, K / qk * block bytes] -> [tokens * top_k, row]."""
     kernel, bkb = _KERNELS[quant_type]
     qk, size = BLOCK[quant_type]
@@ -403,11 +403,11 @@ def moe_new_type(X, W, sorted_token_ids, expert_ids, num_tokens_post_padded, qua
     if num_k_blocks * qk != X.shape[1]:
         raise ValueError(f"expert width {num_k_blocks * qk} != activation width {X.shape[1]}")
     out = torch.zeros((tokens * top_k, row), device=X.device, dtype=out_dtype or X.dtype)
-    sorted_token_ids = _pad_sorted(sorted_token_ids, expert_ids, BLOCK_M)
+    sorted_token_ids = _pad_sorted(sorted_token_ids, expert_ids, block_m)
     kernel[_grid(expert_ids, row, BLOCK_N)](
         X, W, out, sorted_token_ids, expert_ids.reshape(-1), num_tokens_post_padded, tokens * top_k, top_k, row,
         num_k_blocks, X.stride(0), X.stride(1), W.stride(0), W.stride(1), W.stride(2), out.stride(0), out.stride(1),
-        BLOCK_M=BLOCK_M, BLOCK_N=BLOCK_N, BLOCK_K_BLOCKS=bkb, num_warps=4, num_stages=2)
+        BLOCK_M=block_m, BLOCK_N=BLOCK_N, BLOCK_K_BLOCKS=bkb, num_warps=4, num_stages=2)
     return out
 
 

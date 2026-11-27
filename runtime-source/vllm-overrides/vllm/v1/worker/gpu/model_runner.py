@@ -19,8 +19,10 @@ instead of embedding feature-specific logic directly.
 import functools
 import gc
 import time
+import os
 from collections.abc import Iterable
-from contextlib import AbstractContextManager
+from contextlib import AbstractContextManager, contextmanager
+from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import replace
 from typing import Any, NamedTuple
@@ -197,6 +199,31 @@ logger = init_logger(__name__)
 
 
 class GPUModelRunner(LoRAModelRunnerMixin):
+    @property
+    def benchmark_graphs(self):
+        # Once capture is complete the startup exception is permanently closed.
+        if (self._benchmark_graphs is not None and not self._benchmark_graphs_ready
+                and self._synthetic_benchmark_warmup.get()):
+            return None
+        return self._benchmark_graphs
+
+    @contextmanager
+    def synthetic_benchmark_warmup(self):
+        observer = self._benchmark_graphs
+        if observer is None:
+            yield
+            return
+        if (self._benchmark_graphs_ready or observer.head_counts is not None
+                or observer.draft_counts is not None or self._synthetic_benchmark_warmup.get()):
+            raise RuntimeError('Synthetic benchmark warmup can run only before graph capture')
+        # The worker invokes this synchronous startup method before it accepts requests.
+        # Keep the exception task-local and restore all observer paths, including on error.
+        token = self._synthetic_benchmark_warmup.set(True)
+        try:
+            yield
+        finally:
+            self._synthetic_benchmark_warmup.reset(token)
+
     def __init__(self, vllm_config: VllmConfig, device: torch.device):
         self.vllm_config = vllm_config
         self.model_config = vllm_config.model_config
@@ -220,6 +247,21 @@ class GPUModelRunner(LoRAModelRunnerMixin):
         self.jit_warmup_registry = JitWarmupRegistry(vllm_config)
 
         self.device = device
+        self._benchmark_graphs = None
+        self._benchmark_graphs_ready = False
+        self._synthetic_benchmark_warmup = ContextVar('kai_synthetic_benchmark_warmup', default=False)
+        if os.getenv('KAILLM_BENCHMARK_GRAPH_DIR'):
+            from vllm_gguf_plugin.benchmark_graphs import TargetGraphCounters
+            self._benchmark_graphs = TargetGraphCounters.from_config(vllm_config, device)
+        self.default_dispatch = None
+        default_directory = os.getenv('KAILLM_BENCHMARK_DEFAULT_DIR')
+        if default_directory:
+            if self._benchmark_graphs is not None:
+                raise ValueError('Choose either the default dispatch observer or strict CUDA graphs')
+            from vllm_gguf_plugin.benchmark_graphs import DefaultDispatchCounters, physical_gpu_uuid
+            self.default_dispatch = DefaultDispatchCounters(
+                default_directory, physical_gpu_uuid(device), self.compilation_config.cudagraph_mode.name,
+                self.model_config.enforce_eager)
         self.dtype = self.model_config.dtype
         self.kv_cache_dtype = self.dtype
         if self.cache_config.cache_dtype != "auto":
@@ -277,6 +319,8 @@ class GPUModelRunner(LoRAModelRunnerMixin):
         self.uses_inputs_embeds = (
             self.supports_mm_inputs or self.model_config.enable_prompt_embeds
         )
+        if self.benchmark_graphs is not None and self.uses_inputs_embeds:
+            raise RuntimeError('Graph-only text benchmarking requires token embeddings inside the target graph')
         self.encoder_cache = None
         if self.supports_mm_inputs and self.is_first_pp_rank:
             self.encoder_cache = EncoderCache()
@@ -410,6 +454,9 @@ class GPUModelRunner(LoRAModelRunnerMixin):
                     vllm_config=self.vllm_config,
                     model_config=self.vllm_config.model_config,
                 )
+            if os.environ.get("KAILLM_SPARK_DSPARK5_MIXTURE_FMA4") == "1":
+                from vllm_gguf_plugin.inkling import spark_verify_router
+                spark_verify_router.authenticate_mixture_scales(self.model, self.vllm_config, self.device)
             if self.lora_config:
                 self.model = self.load_lora_model(
                     self.model, self.vllm_config, self.device
@@ -1148,6 +1195,10 @@ class GPUModelRunner(LoRAModelRunnerMixin):
                         self.attn_groups,
                         self.kv_cache_config,
                     )
+                    if self.benchmark_graphs is not None and self.is_last_pp_rank and not profile_only:
+                        head = self.model.compute_logits if self.batch_sharder is None else self.model.compute_logits_local
+                        rows = self.max_num_reqs * (self.num_speculative_steps + 1)
+                        self.benchmark_graphs.install_head(self.cudagraph_manager.hidden_states, rows, head)
                     if self.speculator is not None:
                         with use_workspace_lane(self._draft_workspace_lane):
                             self.speculator.capture()
@@ -1166,6 +1217,14 @@ class GPUModelRunner(LoRAModelRunnerMixin):
             # Lock workspace to prevent resizing during execution. A resize after
             # capture frees the static cuda graph buffer.
             lock_workspace()
+            if self.benchmark_graphs is not None:
+                if (self.is_last_pp_rank and self.speculative_config is not None
+                        and (not self.speculative_config.use_ngram() or self.speculative_config.use_ngram_gpu())):
+                    if self.ngram_gpu_single_active and not self.cudagraph_manager.ngram_conditional.handle.value:
+                        raise RuntimeError("Missing captured n-gram singleton verification branches")
+                    self.benchmark_graphs.install_drafter(self.speculator)
+                self.benchmark_graphs.ready(self.cudagraph_manager.graphs, self.scheduler_config.max_num_batched_tokens)
+                self._benchmark_graphs_ready = True
 
         end_time = time.perf_counter()
         elapsed_time = end_time - start_time
@@ -1654,6 +1713,7 @@ class GPUModelRunner(LoRAModelRunnerMixin):
         hidden_states: torch.Tensor,
         input_batch: InputBatch,
         grammar_output: GrammarOutput | None,
+        graph_phases=None,
     ) -> tuple[SamplerOutput, torch.Tensor, torch.Tensor]:
         shard_metadata = None
         global_input_batch = input_batch
@@ -1667,12 +1727,17 @@ class GPUModelRunner(LoRAModelRunnerMixin):
             # before computing the partial-vocab logits, so that the all-to-all
             # produces full-vocab logits for just the locally-owned requests.
             sample_hidden_states = hidden_states[sorted_logits_indices]
-            local_logits = self.model.compute_logits_local(sample_hidden_states)
+            local_logits = (self.model.compute_logits_local(sample_hidden_states) if self.benchmark_graphs is None
+                            else self.benchmark_graphs.project_head(sample_hidden_states, graph_phases))
             logits = all_to_all_logits(local_logits, shard_metadata)
             logits = logits[:, : self.vocab_size]
         else:
             sample_hidden_states = hidden_states[input_batch.logits_indices]
-            logits = self.model.compute_logits(sample_hidden_states)
+            logits = (self.model.compute_logits(sample_hidden_states) if self.benchmark_graphs is None
+                      else self.benchmark_graphs.project_head(sample_hidden_states, graph_phases))
+
+        if self.default_dispatch is not None and graph_phases is not None and sample_hidden_states.shape[0] > 0:
+            self.default_dispatch.add(graph_phases, 3)
 
         invalid_drafts = None
         # A diffusion prefill has no logit rows even when a bitmask row
@@ -1881,10 +1946,20 @@ class GPUModelRunner(LoRAModelRunnerMixin):
             allow_skip_drafts=scheduler_output.skip_drafts,
         )
 
+        twins = getattr(self.cudagraph_manager, "inkling_verify_twins", None)
+        if twins and batch_desc in twins and self.cudagraph_manager.inkling_verify_is_real(batch_req_state):
+            batch_desc = twins[batch_desc]
+
         if batch_desc.num_tokens == 0:
             # All DP ranks have zero tokens to run.
             empty_output = self.kv_connector.no_forward(scheduler_output)
             return self._merge_ec_connector_no_forward(scheduler_output, empty_output)
+
+        # Initialization/profile work is outside the benchmark. Every real target
+        # step must pass this guard before any model forward or graph replay.
+        observed_phase = None
+        if self.benchmark_graphs is not None and not dummy_run:
+            observed_phase = self.benchmark_graphs.require(batch_req_state, batch_desc.cg_mode.name)
 
         cudagraph_stats = None
         if not dummy_run:
@@ -2124,6 +2199,9 @@ class GPUModelRunner(LoRAModelRunnerMixin):
                 scheduler_output, input_batch, attn_metadata=attn_metadata
             )
             model_output = self.cudagraph_manager.run_fullgraph(batch_desc)
+            if observed_phase is not None:
+                # run_fullgraph returns only after enqueueing the captured graph.
+                self.benchmark_graphs.replayed(observed_phase)
         else:
             # For piecewise and eager mode, just call model().
             batch_descriptor = BatchDescriptor(
@@ -2174,6 +2252,10 @@ class GPUModelRunner(LoRAModelRunnerMixin):
 
         self.kv_connector.finish_forward()
 
+        if self.default_dispatch is not None and not dummy_run:
+            mode = batch_desc.cg_mode.name if ubatch_state is None else 'UBATCHED'
+            observed_phase = self.default_dispatch.completed_forward(batch_req_state, mode)
+
         if self.is_last_pp_rank:
             if self.use_aux_hidden_state_outputs:
                 assert isinstance(model_output, tuple)
@@ -2206,6 +2288,7 @@ class GPUModelRunner(LoRAModelRunnerMixin):
             finished_req_ids=finished_req_ids,
             ec_connector_output=ec_connector_output,
             cudagraph_stats=cudagraph_stats,
+            benchmark_graph_phases=observed_phase,
             num_spec_tokens_to_schedule=(
                 0 if skip_drafts else scheduler_output.num_spec_tokens_to_schedule
             ),
@@ -2239,6 +2322,7 @@ class GPUModelRunner(LoRAModelRunnerMixin):
         ec_connector_output = self.execute_model_state.ec_connector_output
         cudagraph_stats = self.execute_model_state.cudagraph_stats
         num_spec_tokens = self.execute_model_state.num_spec_tokens_to_schedule
+        graph_phases = self.execute_model_state.benchmark_graph_phases
         self.execute_model_state = None
 
         if not self.is_last_pp_rank:
@@ -2272,7 +2356,7 @@ class GPUModelRunner(LoRAModelRunnerMixin):
             )
 
         sampler_output, num_sampled, num_rejected = self.sample(
-            hidden_states, input_batch, grammar_output
+            hidden_states, input_batch, grammar_output, graph_phases
         )
 
         if self.pp_handler is not None:
@@ -2285,8 +2369,12 @@ class GPUModelRunner(LoRAModelRunnerMixin):
             )
 
         assert self.prompt_logprobs_worker is not None
+        prompt_head = self.model.compute_logits
+        if self.benchmark_graphs is not None:
+            def prompt_head(hidden):
+                raise RuntimeError('Prompt logprob projections are outside the graph-only speed protocol')
         prompt_logprobs_dict = self.prompt_logprobs_worker.compute_prompt_logprobs(
-            self.model.compute_logits,
+            prompt_head,
             hidden_states,
             input_batch,
             self.req_states.all_token_ids.gpu,
@@ -2295,7 +2383,7 @@ class GPUModelRunner(LoRAModelRunnerMixin):
         )
         prompt_token_id_logprobs_dict = (
             self.prompt_logprobs_worker.compute_prompt_token_id_logprobs(
-                self.model.compute_logits,
+                prompt_head,
                 hidden_states,
                 input_batch,
                 self.req_states.prompt_len.np,
@@ -2378,6 +2466,9 @@ class GPUModelRunner(LoRAModelRunnerMixin):
                 self.speculator.prepare_watermarking(
                     self.sampler, input_batch.idx_mapping
                 )
+            observing_draft = self.benchmark_graphs is not None and self.benchmark_graphs.draft_counts is not None
+            if observing_draft:
+                self.benchmark_graphs.begin_proposal()
             with use_workspace_lane(self._draft_workspace_lane):
                 draft_tokens = self.speculator.propose(
                     input_batch,
@@ -2395,6 +2486,8 @@ class GPUModelRunner(LoRAModelRunnerMixin):
                     dp_sync_state=dp_sync_state,
                     mm_inputs=mm_inputs,
                 )
+            if observing_draft:
+                self.benchmark_graphs.end_proposal()
             if num_spec_tokens < self.num_speculative_steps:
                 draft_tokens[:, num_spec_tokens:] = -1
             self.req_states.draft_tokens[input_batch.idx_mapping] = draft_tokens
@@ -2562,6 +2655,7 @@ class ExecuteModelState(NamedTuple):
     ec_connector_output: ECConnectorOutput | None
     cudagraph_stats: CUDAGraphStat | None
     num_spec_tokens_to_schedule: int
+    benchmark_graph_phases: tuple[int, ...] | None
 
 
 class BatchReqState(NamedTuple):

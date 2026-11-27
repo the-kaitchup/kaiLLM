@@ -19,6 +19,38 @@ from ..utils import (
 
 
 @triton.jit
+def iq4nl_register_value(code):
+    # prmt indexes one of eight bytes. The two registers in each pair
+    # concatenate to spans 0..7 and 8..15 of GGML's signed IQ4_NL codebook.
+    return tl.inline_asm_elementwise(
+        asm="""{
+            .reg .b32 ix, lo, hi, value;
+            .reg .pred low_bank;
+            and.b32 ix, $1, 7;
+            prmt.b32 lo, 0xbfad9881, 0xf6eaddcf, ix;
+            prmt.b32 hi, 0x26190d01, 0x71594535, ix;
+            setp.lt.u32 low_bank, $1, 8;
+            selp.b32 value, lo, hi, low_bank;
+            cvt.s32.s8 $0, value;
+        }""",
+        constraints="=r,r", args=[code.to(tl.uint32)], dtype=tl.int32,
+        is_pure=True, pack=1,
+    )
+
+
+def _iq4_kernel_name(specialization):
+    # The physical CUPTI trace can identify tiled prefill without host callbacks.
+    tile = specialization.constants["BLOCK_M"]
+    if tile in (16, 32):
+        if specialization.constants["BLOCK_K_BLOCKS"] == 2 and specialization.constants["BLOCK_N"] == 64:
+            return f"iq4_nl_moe_kernel_m{tile}_n64_k64"
+        return f"iq4_nl_moe_kernel_m{tile}"
+    if tile == 4 and specialization.constants["BLOCK_N"] in (16, 32):
+        return f"iq4_nl_moe_kernel_m4_n{specialization.constants['BLOCK_N']}"
+    return "iq4_nl_moe_kernel"
+
+
+@triton.jit(repr=_iq4_kernel_name)
 def iq4_nl_moe_kernel(
     x_ptr,
     w_u8_ptr,
@@ -41,6 +73,7 @@ def iq4_nl_moe_kernel(
     BLOCK_M: tl.constexpr,
     BLOCK_N: tl.constexpr,
     BLOCK_K_BLOCKS: tl.constexpr,
+    ORIGINAL_TABLE: tl.constexpr = False,
 ):
     pid_m = tl.program_id(axis=0)
     pid_n = tl.program_id(axis=1)
@@ -82,14 +115,24 @@ def iq4_nl_moe_kernel(
             mask=n_mask[:, None, None] & kb_mask[None, :, None],
             other=0,
         )
-        low = (
-            tl.load(values_ptr + (packed & 0x0F).to(tl.int32)).to(x_dtype)
-            * d[:, :, None]
-        )
-        high = (
-            tl.load(values_ptr + ((packed >> 4) & 0x0F).to(tl.int32)).to(x_dtype)
-            * d[:, :, None]
-        )
+        if not ORIGINAL_TABLE and ((BLOCK_N == 64 and BLOCK_K_BLOCKS == 2) or (BLOCK_M == 4 and BLOCK_N == 16 and BLOCK_K_BLOCKS == 4)):
+            if values_ptr is None:
+                lo_code = iq4nl_register_value(packed & 0x0F)
+                hi_code = iq4nl_register_value(packed >> 4)
+            else:
+                lo_code = tl.load(values_ptr + (packed & 0x0F).to(tl.int32))
+                hi_code = tl.load(values_ptr + (packed >> 4).to(tl.int32))
+            low = lo_code.to(x_dtype) * d[:, :, None]
+            high = hi_code.to(x_dtype) * d[:, :, None]
+        else:
+            low = (
+                tl.load(values_ptr + (packed & 0x0F).to(tl.int32)).to(x_dtype)
+                * d[:, :, None]
+            )
+            high = (
+                tl.load(values_ptr + ((packed >> 4) & 0x0F).to(tl.int32)).to(x_dtype)
+                * d[:, :, None]
+            )
         q_tile = tl.reshape(tl.join(low, high), (BLOCK_N, BLOCK_K_BLOCKS * 32))
         acc = tl.dot(x_tile, tl.trans(q_tile), acc=acc)
 

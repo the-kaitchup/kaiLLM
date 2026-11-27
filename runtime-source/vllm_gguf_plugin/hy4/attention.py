@@ -28,6 +28,10 @@ from torch import nn
 IMPL = os.environ.get("KAILLM_HY4_SPARSE_MLA", "auto")
 
 
+def graph_backend_enabled():
+    return os.environ.get("KAILLM_HY4_FULL_GRAPHS") == "1" or bool(os.environ.get("KAILLM_BENCHMARK_GRAPH_DIR"))
+
+
 # ----------------------------------------------------------------------------------------------
 # pure functions (CPU-testable)
 
@@ -207,7 +211,9 @@ def _backend_classes():
         num_decode_tokens: int = 0
 
     class Hy4SparseMLAMetadataBuilder(AttentionMetadataBuilder[Hy4SparseMLAMetadata]):
-        _cudagraph_support: ClassVar[AttentionCGSupport] = AttentionCGSupport.NEVER
+        _cudagraph_support: ClassVar[AttentionCGSupport] = (
+            AttentionCGSupport.ALWAYS if graph_backend_enabled() else AttentionCGSupport.NEVER
+        )
 
         def __init__(self, kv_cache_spec: AttentionSpec, layer_names, vllm_config: VllmConfig, device):
             self.kv_cache_spec = kv_cache_spec
@@ -218,10 +224,17 @@ def _backend_classes():
 
         def build(self, common_prefix_len, common_attn_metadata: CommonAttentionMetadata, fast_build=False):
             m = common_attn_metadata
-            starts = np.asarray(m.query_start_loc_cpu, dtype=np.int32)
-            req = np.repeat(np.arange(len(starts) - 1, dtype=np.int32), np.diff(starts))
-            self.req_id_buf.fill_(0)
-            self.req_id_buf[: req.shape[0]].copy_(np_to_pinned_tensor(req), non_blocking=True)
+            if graph_backend_enabled():
+                # vLLM's request mapping reads the device query boundaries, maps padding
+                # to rank zero, and shares the result across the target's cache groups.
+                ids = m.token_to_req_indices(self.req_id_buf)
+                if ids.data_ptr() != self.req_id_buf.data_ptr():
+                    self.req_id_buf[:ids.numel()].copy_(ids)
+            else:
+                starts = np.asarray(m.query_start_loc_cpu, dtype=np.int32)
+                req = np.repeat(np.arange(len(starts) - 1, dtype=np.int32), np.diff(starts))
+                self.req_id_buf.fill_(0)
+                self.req_id_buf[: req.shape[0]].copy_(np_to_pinned_tensor(req), non_blocking=True)
             return Hy4SparseMLAMetadata(
                 num_reqs=m.num_reqs, max_query_len=m.max_query_len, max_seq_len=m.max_seq_len,
                 num_actual_tokens=m.num_actual_tokens, query_start_loc=m.query_start_loc,

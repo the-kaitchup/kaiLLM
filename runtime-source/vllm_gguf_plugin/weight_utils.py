@@ -105,6 +105,32 @@ def get_gguf_weight_type_map(
     return result
 
 
+def gguf_tensor_views(tensors, row_splits=None):
+    """Expose contiguous fused output matrices as views of their original GGUF rows."""
+    if not row_splits:
+        yield from tensors
+        return
+    for tensor in tensors:
+        splits = row_splits.get(tensor.name)
+        if splits is None:
+            yield tensor
+            continue
+        if (len(tensor.shape) != 2 or tensor.data.ndim != 2
+                or int(tensor.shape[1]) != tensor.data.shape[0]
+                or any(rows <= 0 for _, rows in splits)
+                or sum(rows for _, rows in splits) != tensor.data.shape[0]):
+            raise ValueError(f"Invalid GGUF row split for {tensor.name}: {tuple(tensor.shape)}")
+        start = 0
+        for name, rows in splits:
+            shape = tensor.shape.copy()
+            shape[1] = rows
+            data = tensor.data[start:start + rows]
+            yield tensor._replace(name=name, shape=shape, data=data, n_bytes=data.nbytes,
+                                  n_elements=int(shape[0]) * rows,
+                                  data_offset=tensor.data_offset + start * tensor.data.strides[0])
+            start += rows
+
+
 def gguf_quant_weights_iterator(
     gguf_file: str | Path, gguf_to_hf_name_map: dict[str, str] | None
 ) -> Generator[tuple[str, torch.Tensor], None, None]:
@@ -112,7 +138,7 @@ def gguf_quant_weights_iterator(
 
 
 def gguf_quant_weights_iterator_multi(
-    gguf_files: list[str], gguf_to_hf_name_map: dict[str, str] | None = None
+    gguf_files: list[str], gguf_to_hf_name_map: dict[str, str] | None = None, *, row_splits=None
 ) -> Generator[tuple[str, torch.Tensor], None, None]:
     """Yield ``(name, tensor)`` for all tensors in *gguf_files*.
 
@@ -123,7 +149,7 @@ def gguf_quant_weights_iterator_multi(
     """
     for gguf_file in gguf_files:
         reader = gguf.GGUFReader(gguf_file)
-        for tensor in reader.tensors:
+        for tensor in gguf_tensor_views(reader.tensors, row_splits):
             if gguf_to_hf_name_map is not None:
                 if tensor.name not in gguf_to_hf_name_map:
                     continue

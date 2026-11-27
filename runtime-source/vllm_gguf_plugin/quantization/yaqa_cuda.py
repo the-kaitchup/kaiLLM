@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Optional SM86/SM120 QTIP2 GEMV using original packed words and FP32 activations."""
+"""Optional CUDA QTIP2 GEMV using original packed words and FP32 activations."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ import fcntl
 import hashlib
 import json
 import os
+import platform
 import shutil
 import subprocess
 from functools import lru_cache
@@ -82,10 +83,12 @@ def build_cuda_library(source, contract, stem, architecture=None):
         fcntl.flock(lock, fcntl.LOCK_EX)
         if not library.exists():
             overlay = Path(compatibility["include_directory"])
+            machine = platform.machine().lower()
+            machine = {"arm64": "aarch64", "amd64": "x86_64"}.get(machine, machine)
             directories = [
                 cuda_home / "lib",
                 cuda_home / "lib64",
-                cuda_home / "targets/x86_64-linux/lib",
+                cuda_home / "targets" / f"{machine}-linux" / "lib",
             ]
             runtime = next(
                 (

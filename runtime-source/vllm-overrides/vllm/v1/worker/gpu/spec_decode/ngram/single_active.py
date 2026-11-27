@@ -11,6 +11,7 @@ import copy
 import ctypes
 import hashlib
 import json
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -138,6 +139,11 @@ def validate_single_active_profile(config: VllmConfig) -> None:
         if piecewise_prefill
         else CUDAGraphMode.FULL_DECODE_ONLY
     )
+    if os.environ.get("KAILLM_BENCHMARK_GRAPH_DIR"):
+        expected_graph_mode = CUDAGraphMode.FULL
+        sizes = config.compilation_config.cudagraph_capture_sizes or []
+        if not sizes or max(sizes) < config.scheduler_config.max_num_batched_tokens:
+            raise ValueError("Full n-gram graphs must cover the largest scheduled prefill")
     if piecewise_prefill:
         from vllm.compilation.breakable_cudagraph import is_breakable_cudagraph_enabled
 
@@ -191,7 +197,7 @@ def validate_single_active_profile(config: VllmConfig) -> None:
         raise ValueError(
             "ngram_gpu_single_active requires F32 or BF16 LFM3/TRITON_ATTN, Model Runner V2, "
             "async positive serving capacity, single rank, no prefix cache/LoRA/aux/transfer, "
-            "mode0 FULL_DECODE_ONLY or explicit stock piecewise prefill, "
+            "mode0 decode graphs, stock piecewise prefill, or benchmark FULL graphs, "
             "and scheduling capacity for four queries."
         )
     if 4 not in (config.compilation_config.cudagraph_capture_sizes or []):

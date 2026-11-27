@@ -1,0 +1,201 @@
+{
+  "profiles": {
+    "lfm3-1.7b": {
+      "upstream": "f4f6f2e7db76e98c95cc9b7fc608ea669c806044",
+      "geometry": {
+        "global_layers": [
+          2,
+          6,
+          10,
+          14,
+          18,
+          22
+        ],
+        "global_kv_heads": [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "key_head_width": 128,
+        "value_head_width": 128
+      }
+    },
+    "inkling-2-mini": {
+      "upstream": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6",
+      "geometry": {
+        "global_layers": [
+          5,
+          11,
+          17,
+          23,
+          29,
+          35,
+          41,
+          47
+        ],
+        "global_kv_heads": [
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8
+        ],
+        "key_head_width": 128,
+        "value_head_width": 128
+      }
+    },
+    "qwen35-27b": {
+      "upstream": "f4f6f2e7db76e98c95cc9b7fc608ea669c806044",
+      "geometry": {
+        "global_layers": [
+          3,
+          7,
+          11,
+          15,
+          19,
+          23,
+          27,
+          31,
+          35,
+          39,
+          43,
+          47,
+          51,
+          55,
+          59,
+          63
+        ],
+        "global_kv_heads": [
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4,
+          4
+        ],
+        "key_head_width": 256,
+        "value_head_width": 256
+      }
+    },
+    "inkling-2-mini-unfolded-head": {
+      "upstream": "b5ed9f2845358124d1cbce91f475011047515e74",
+      "geometry": {
+        "global_layers": [
+          5,
+          11,
+          17,
+          23,
+          29,
+          35,
+          41,
+          47
+        ],
+        "global_kv_heads": [
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8,
+          8
+        ],
+        "key_head_width": 128,
+        "value_head_width": 128
+      }
+    }
+  },
+  "checkpoints": {
+    "lfm-qad": {
+      "profile": "lfm3-1.7b",
+      "file_sha256": [
+        "43a7d09a0e9cba91b63eb7052488b9564569bddfd65754d2e426465e572a7452"
+      ],
+      "header_sha256": "7d67b7552aa535c5b4f05ef9f3cfe1103f5762fbe6bb5d0922c3a5f093a47469"
+    },
+    "lfm-suisui": {
+      "profile": "lfm3-1.7b",
+      "file_sha256": [
+        "94e06338bc9f3effdc82b32065d6a97cec763dd5870e37c350a36ed6d37f0ed5"
+      ],
+      "header_sha256": "a533f9e986708815e99083dd22451c22d4c5e62ac4a79e40e45139c0cd8a36f2"
+    },
+    "inkling-loop-iq4": {
+      "profile": "inkling-2-mini",
+      "file_sha256": [
+        "cbdf3fa9dc50a4124977980f37da4f1fa764b0cfe800d275cd43d26ce2a81af4"
+      ],
+      "header_sha256": "c30b53714f9b6313b1da003c8fdfd8a2d4a8cd3b352f77b0bd8354ea1860d665",
+      "minimum_resident_expert_bytes": 15797846016
+    },
+    "inkling-udq2": {
+      "profile": "inkling-2-mini",
+      "file_sha256": [
+        "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+      ],
+      "header_sha256": "8844446bcb0013f823b8c21af7848093b6e2d517c3c4e4ee6529308a08cc23cb",
+      "minimum_resident_expert_bytes": 7888306176
+    },
+    "daisy-iq2m": {
+      "profile": "qwen35-27b",
+      "file_sha256": [
+        "4af4d35636c67b9a8777868b30f10170d85d1e5519ce17d13080dff115587f30"
+      ],
+      "header_sha256": "a1e06edfa58a2d062a30f0fb0572ad66d92ad256c8f6c6f7439b520032867944"
+    },
+    "daisy-dondon": {
+      "profile": "qwen35-27b",
+      "file_sha256": [
+        "d44d10c1029c9652ecc4d1c169929c106134303070dce35c0fbc29ae1ecd4554"
+      ],
+      "header_sha256": "5ae74f4cba19b6d041114d87ece90c0484df60efe0f88f223ee194f0386ee6cf"
+    },
+    "qwen-udq2": {
+      "profile": "qwen35-27b",
+      "file_sha256": [
+        "18f1187f38e7994b05c08cb45c674b90b7f17523687c83a4614fe493f7ea739d"
+      ],
+      "header_sha256": "97cb1f358482be5dd50a37b025c33af466067f63368844fcd238bf6b5b17d5fa"
+    },
+    "inkling-dondon-xs": {
+      "profile": "inkling-2-mini-unfolded-head",
+      "file_sha256": [
+        "d2e18b505ed0885e620e4f54c8d7d9734ecdaf5d07c857a32aca069043a862d1"
+      ],
+      "header_sha256": "432f0d2fb4d5540450a9894d727d68563df16b1a6d41c193fcf1feb31673194e",
+      "minimum_resident_expert_bytes": 6847856640
+    },
+    "inkling-dondon-m": {
+      "profile": "inkling-2-mini-unfolded-head",
+      "file_sha256": [
+        "b25d34613efb53a890ac8d197ac1cbac51cbea8b12bcc4cc5d38c227761405ae"
+      ],
+      "header_sha256": "c4a9706c9dc1a96b7626c5527b78d386feb2b6043e8a95c30e97c896db9d008e",
+      "minimum_resident_expert_bytes": 10298327040
+    },
+    "inkling-dondon-s": {
+      "profile": "inkling-2-mini-unfolded-head",
+      "file_sha256": [
+        "ff6f8da69caffafb80ad8eab0c52f5d8ea1e14653325379f356edfe395ee4864"
+      ],
+      "header_sha256": "d55e1f55d814249aa5372712250a17215cb64a46b41a76d84688106008824290",
+      "minimum_resident_expert_bytes": 8769503232
+    }
+  }
+}

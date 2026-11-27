@@ -6,7 +6,7 @@ vllm_gguf_plugin/hy4/{attention,blocks}.py). Structure follows Tencent's vLLM fo
 layer is sparse MLA over the paged latent cache with per-token index lists (sliding windows, or the
 compressed indexer's picks), learnable sinks, gated output and a sandwich norm; 4-stream
 hyper-connections; latent MoE (GGUF experts in a 1536-wide latent, clamped SwiGLU); Engram n-gram
-memory read from a host-resident table. Tensor parallelism and pipeline parallelism: not yet.
+memory read from a host-resident table. Pipeline stages partition the backbone by layer.
 """
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ import torch
 from torch import nn
 
 from vllm.config import CacheConfig, VllmConfig, get_current_vllm_config
+from vllm.distributed import get_pp_group
 from vllm.forward_context import get_forward_context
 from vllm.model_executor.layers.attention import MLAAttention
 from vllm.model_executor.layers.attention_layer_base import AttentionLayerBase
@@ -25,6 +26,8 @@ from vllm.model_executor.layers.layernorm import RMSNorm
 from vllm.model_executor.layers.linear import ReplicatedLinear
 from vllm.model_executor.layers.logits_processor import LogitsProcessor
 from vllm.model_executor.layers.vocab_parallel_embedding import ParallelLMHead, VocabParallelEmbedding
+from vllm.model_executor.models.interfaces import SupportsPP
+from vllm.model_executor.models.utils import PPMissingLayer, make_layers
 from vllm.sequence import IntermediateTensors
 from vllm.v1.kv_cache_interface import MLAAttentionSpec, SparseCacheRole
 
@@ -81,6 +84,10 @@ class _PerTokenCache(nn.Module, AttentionLayerBase):
         flat, stride = self._rows()
         bs = self.kv_cache.shape[1]
         n = min(values.shape[0], md.slot_mapping.shape[0])
+        if values.is_cuda and A.graph_backend_enabled():
+            from vllm_gguf_plugin.hy4.paged_index import write_rows
+            write_rows(flat, values[:n], md.slot_mapping[:n], bs, stride)
+            return
         slots = md.slot_mapping[:n].long()
         ok = slots >= 0
         slots = slots[ok]
@@ -105,6 +112,7 @@ class Hy4CompressedIndexer(nn.Module):
         super().__init__()
         self.topk_indices_buffer = topk_buf
         self.topk_tokens = topk_buf.shape[1]
+        self.graph_context = get_current_vllm_config().model_config.max_model_len if A.graph_backend_enabled() else None
         self.candidate_topk = int(config.compressed_indexer_candidate_topk)
         self.heads = int(config.compressed_indexer_num_attention_heads)
         self.head_dim = int(config.compressed_indexer_head_dim)
@@ -143,6 +151,19 @@ class Hy4CompressedIndexer(nn.Module):
             out.copy_(A.dense_indices(positions[:T], self.topk_tokens))
             return out
         self.key_cache.write(keys, md)
+        if self.graph_context is not None:
+            from vllm_gguf_plugin.hy4.paged_index import complete_groups, select_paged
+            if self.group_topk * self.ratio != self.candidate_topk:
+                raise ValueError("Hy4 graph indexing requires the GGUF's complete group candidate layout")
+            w = self._weights()
+            flat, stride = self.key_cache._rows()
+            page = self.key_cache.kv_cache.shape[1]
+            complete_groups(flat, stride, md, T, w, page)
+            q = self.query_projection(q_c)[0]
+            out.copy_(select_paged(hidden_states, q, positions[:T], flat, stride, md, w, page,
+                                   self.graph_context, self.candidate_topk))
+            return out
+
         out.copy_(A.dense_indices(positions[:T], self.topk_tokens))
         seq_lens = md.seq_lens.tolist()
         if max(seq_lens) <= self.candidate_topk:
@@ -327,8 +348,13 @@ class HYV4FlashModel(nn.Module):
         config = vllm_config.model_config.hf_text_config
         quant_config, cache_config = vllm_config.quant_config, vllm_config.cache_config
         self.config = config
-        self.embed_tokens = VocabParallelEmbedding(config.vocab_size, config.hidden_size, quant_config=quant_config,
-                                                   prefix=f"{prefix}.embed_tokens")
+        self.first_stage = get_pp_group().is_first_rank
+        self.last_stage = get_pp_group().is_last_rank
+        if A.graph_backend_enabled() and vllm_config.num_speculative_tokens:
+            raise ValueError("Hy4's native proposer requires independent graph qualification")
+        self.embed_tokens = (VocabParallelEmbedding(config.vocab_size, config.hidden_size, quant_config=quant_config,
+                                                    prefix=f"{prefix}.embed_tokens")
+                             if self.first_stage else PPMissingLayer())
         width = int(config.compressed_indexer_candidate_topk)
         self.topk_buf = torch.full((vllm_config.scheduler_config.max_num_batched_tokens, width), -1,
                                    dtype=torch.int32)
@@ -337,19 +363,29 @@ class HYV4FlashModel(nn.Module):
         for lid in sorted(config.engram_layer_ids or []):
             bases[lid - 1] = base
             base += sum(sum(o) for o in config.engram_layer_head_vocab_sizes[str(lid)])
-        self.layers = nn.ModuleList([
-            Hy4DecoderLayer(config, i, quant_config, cache_config, self.topk_buf, self.table, bases.get(i, 0),
-                            f"{prefix}.layers.{i}")
-            for i in range(config.num_hidden_layers)])
+        def make_layer(prefix):
+            index = _prefix_layer(prefix)
+            return Hy4DecoderLayer(config, index, quant_config, cache_config, self.topk_buf, self.table,
+                                   bases.get(index, 0), prefix)
+        self.start_layer, self.end_layer, self.layers = make_layers(config.num_hidden_layers, make_layer,
+                                                                    f"{prefix}.layers")
+        if self.table is not None and A.graph_backend_enabled():
+            local_rows = [(bases[layer], sum(map(sum, config.engram_layer_head_vocab_sizes[str(layer+1)])))
+                          for layer in sorted(bases) if self.start_layer <= layer < self.end_layer]
+            if local_rows:
+                first, _ = local_rows[0]
+                last, width = local_rows[-1]
+                self.table.prepare_graph_rows(first, last + width)
         # named under layer 0: vLLM orders KV caches by the one integer in each layer name
         self.token_cache = (_PerTokenCache(1, torch.float32, f"{prefix}.layers.0.engram_token_cache", cache_config)
-                            if config.engram_layer_ids else None)
-        self.norm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-        f32 = torch.float32
-        self.hc_head_fn = nn.Parameter(torch.empty(config.hc_mult, config.hc_mult * config.hidden_size, dtype=f32),
-                                       requires_grad=False)
-        self.hc_head_base = nn.Parameter(torch.empty(config.hc_mult, dtype=f32), requires_grad=False)
-        self.hc_head_scale = nn.Parameter(torch.empty(1, dtype=f32), requires_grad=False)
+                            if self.first_stage and config.engram_layer_ids else None)
+        if self.last_stage:
+            self.norm = RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+            f32 = torch.float32
+            self.hc_head_fn = nn.Parameter(torch.empty(config.hc_mult, config.hc_mult * config.hidden_size, dtype=f32),
+                                           requires_grad=False)
+            self.hc_head_base = nn.Parameter(torch.empty(config.hc_mult, dtype=f32), requires_grad=False)
+            self.hc_head_scale = nn.Parameter(torch.empty(1, dtype=f32), requires_grad=False)
 
     def _ngrams(self, input_ids, positions):
         """[T, n] tokens (current first) for the Engram layers, using the paged token-id cache for
@@ -381,24 +417,40 @@ class HYV4FlashModel(nn.Module):
         c = self.config
         if self.topk_buf.device != positions.device:
             self.topk_buf.data = self.topk_buf.to(positions.device)
-        x = inputs_embeds if inputs_embeds is not None else self.embed_tokens(input_ids)
-        ngram = self._ngrams(input_ids, positions) if self.token_cache is not None else None
-        streams = x.unsqueeze(1).expand(-1, c.hc_mult, -1).contiguous()
-        for layer in self.layers:
-            streams = layer(positions, streams, ngram)
+        if self.first_stage:
+            x = inputs_embeds if inputs_embeds is not None else self.embed_tokens(input_ids)
+            streams = x.unsqueeze(1).expand(-1, c.hc_mult, -1).contiguous()
+            ngram = self._ngrams(input_ids, positions) if self.token_cache is not None else None
+        else:
+            streams = intermediate_tensors["streams"]
+            ngram = intermediate_tensors["ngram"] if c.engram_layer_ids else None
+        for i in range(self.start_layer, self.end_layer):
+            streams = self.layers[i](positions, streams, ngram)
+        if not self.last_stage:
+            communication = {"streams": streams}
+            if ngram is not None:
+                communication["ngram"] = ngram.to(torch.int32)
+            return IntermediateTensors(communication)
         h = B.hc_head(streams, self.hc_head_fn, self.hc_head_base, self.hc_head_scale, c.rms_norm_eps, c.hc_eps)
         return self.norm(h)
 
 
-class HYV4FlashForCausalLM(nn.Module):
+class HYV4FlashForCausalLM(nn.Module, SupportsPP):
     def __init__(self, *, vllm_config: VllmConfig, prefix: str = ""):
         super().__init__()
         config = vllm_config.model_config.hf_text_config
         self.config = config
         self.model = HYV4FlashModel(vllm_config=vllm_config, prefix="model")
-        self.lm_head = ParallelLMHead(config.vocab_size, config.hidden_size, quant_config=vllm_config.quant_config,
-                                      prefix="lm_head")
+        self.lm_head = (ParallelLMHead(config.vocab_size, config.hidden_size, quant_config=vllm_config.quant_config,
+                                       prefix="lm_head") if self.model.last_stage else PPMissingLayer())
         self.logits_processor = LogitsProcessor(config.vocab_size)
+
+    def make_empty_intermediate_tensors(self, batch_size, dtype, device):
+        c = self.model.config
+        values = {"streams": torch.zeros((batch_size, c.hc_mult, c.hidden_size), device=device, dtype=dtype)}
+        if c.engram_layer_ids:
+            values["ngram"] = torch.zeros((batch_size, c.engram_max_ngram_size), device=device, dtype=torch.int32)
+        return IntermediateTensors(values)
 
     def embed_input_ids(self, input_ids):
         return self.model.embed_tokens(input_ids)

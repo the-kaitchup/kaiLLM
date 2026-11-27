@@ -132,6 +132,10 @@ def load_target(catalog_path, capability, package_root, inherited_environment):
         )
         raise ValueError(f"CUDA target {capability} is unavailable: {reason}")
     root = Path(package_root).resolve()
+    if capability == "12.1":
+        from .native.spark import verify_runtime
+
+        verify_runtime(root.parent)
     assets = target.get("assets", {})
     if not isinstance(assets, dict) or not assets:
         raise ValueError("Selected target needs a nonempty native asset inventory")

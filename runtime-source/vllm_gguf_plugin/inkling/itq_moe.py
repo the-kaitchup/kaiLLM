@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""ITQ routed experts (codec itq-moe v1, docs/inkling-itq-format.md) as an Inkling MoE stage.
+"""ITQ routed experts (codec itq-moe v1) as an Inkling MoE stage.
 
 W_e = diag(pass_p,e) diag(pos_e) diag(sv) R_out (wscale_e T_e) R_in diag(su) diag(pis_e).  Run time, no host
 synchronisation on the GPU:

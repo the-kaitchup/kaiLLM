@@ -72,7 +72,7 @@ def rel_attention_torch(q, rel, sink, bias, positions, cache, md, scale: float, 
     T, H, D = q.shape
     out = q.new_empty(T, H, D)
     qsl = md.query_start_loc_cpu.tolist()
-    seq = md.seq_lens_cpu.tolist()
+    seq = (md.seq_lens_cpu if md.seq_lens_cpu is not None else md.seq_lens.cpu()).tolist()
     for r in range(md.num_reqs):
         a, b = qsl[r], qsl[r + 1]
         if b <= a:
@@ -99,10 +99,12 @@ class InklingAttnMetadata:
     query_start_loc: torch.Tensor
     query_start_loc_cpu: torch.Tensor
     seq_lens: torch.Tensor
-    seq_lens_cpu: torch.Tensor
+    seq_lens_cpu: torch.Tensor | None
     block_table: torch.Tensor
     slot_mapping: torch.Tensor
     tiles: torch.Tensor | None = None        # decode-only batches: persistent (request, 0) tiles (CUDA graphs)
+    verify_width: int = 1
+    one_pass_decode: bool = False
 
 
 def _backend_classes():
@@ -112,12 +114,15 @@ def _backend_classes():
     from vllm.v1.kv_cache_interface import AttentionSpec
 
     class InklingAttnMetadataBuilder(AttentionMetadataBuilder[InklingAttnMetadata]):
-        # decode-only batches (one token per request) replay as full CUDA graphs: every tensor the kernels read is a
-        # persistent runner buffer or self.decode_tiles, and nothing is synchronised with the host
-        _cudagraph_support: ClassVar[AttentionCGSupport] = AttentionCGSupport.UNIFORM_SINGLE_TOKEN_DECODE
+        # The torch reference reads metadata on the host. The Triton path computes
+        # prefill tiles during replay from the runner's persistent query offsets.
+        _cudagraph_support: ClassVar[AttentionCGSupport] = (
+            AttentionCGSupport.ALWAYS if IMPL in ("auto", "triton") else AttentionCGSupport.NEVER
+        )
 
         def __init__(self, kv_cache_spec: AttentionSpec, layer_names, vllm_config: VllmConfig, device):
             self.kv_cache_spec = kv_cache_spec
+            self.max_verify_width = vllm_config.num_speculative_tokens + 1
             n = max(int(vllm_config.scheduler_config.max_num_seqs), 1)
             self.decode_tiles = torch.stack([torch.arange(n, dtype=torch.int32), torch.zeros(n, dtype=torch.int32)],
                                             dim=1).to(device)
@@ -125,7 +130,7 @@ def _backend_classes():
         def build(self, common_prefix_len, common_attn_metadata: CommonAttentionMetadata, fast_build=False):
             m = common_attn_metadata
             seq_cpu = getattr(m, "seq_lens_cpu_upper_bound", None)
-            if seq_cpu is None:
+            if seq_cpu is None and IMPL == "torch":
                 seq_cpu = m.seq_lens.cpu()
             tiles = None
             if m.max_query_len <= 1 and m.num_reqs <= self.decode_tiles.shape[0]:
@@ -134,7 +139,8 @@ def _backend_classes():
                 num_reqs=m.num_reqs, num_actual_tokens=m.num_actual_tokens, max_query_len=m.max_query_len,
                 max_seq_len=m.max_seq_len, query_start_loc=m.query_start_loc,
                 query_start_loc_cpu=m.query_start_loc_cpu, seq_lens=m.seq_lens, seq_lens_cpu=seq_cpu,
-                block_table=m.block_table_tensor, slot_mapping=m.slot_mapping, tiles=tiles)
+                block_table=m.block_table_tensor, slot_mapping=m.slot_mapping, tiles=tiles,
+                verify_width=m.max_query_len if 1 < m.max_query_len <= self.max_verify_width else 1)
 
     class InklingAttnImpl(AttentionImplBase):
         def __init__(self, *args, **kwargs):

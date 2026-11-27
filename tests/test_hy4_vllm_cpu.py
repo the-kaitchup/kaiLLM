@@ -98,7 +98,7 @@ class Runner:
 
         be.get_impl_cls().do_kv_cache_update = cpu_cache_update
 
-    def step(self, batch):
+    def step(self, batch, intermediate_tensors=None):
         """batch: list of (req, tokens, start position). Returns logits for every scheduled token."""
         from vllm.forward_context import set_forward_context
         from vllm.v1.attention.backend import CommonAttentionMetadata
@@ -129,8 +129,10 @@ class Runner:
         input_ids, positions = torch.cat(ids), torch.cat(pos)
         sm = {n: cm.slot_mapping for n in self.layer_names}
         with set_forward_context({n: md for n in self.layer_names}, self.vc, num_tokens=T, slot_mapping=sm):
-            h = self.model(input_ids, positions)
-        return self.model.compute_logits(h).float()
+            h = self.model(input_ids, positions, intermediate_tensors=intermediate_tensors)
+        if isinstance(h, torch.Tensor):
+            return self.model.compute_logits(h).float()
+        return h
 
     def release(self, req):
         self.free.extend(self.tables.pop(req, []))

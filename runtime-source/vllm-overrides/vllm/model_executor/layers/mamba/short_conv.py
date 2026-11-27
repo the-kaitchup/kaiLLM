@@ -2,6 +2,8 @@
 # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
 
 
+import os
+
 import torch
 
 from vllm.compilation.breakable_cudagraph import eager_break_during_capture
@@ -83,6 +85,9 @@ class ShortConv(MambaBase, PluggableLayer):
 
         vllm_config = get_current_vllm_config()
         self.num_spec = vllm_config.num_speculative_tokens
+        self.full_graph_conv = (getattr(config, "model_type", None) == "lfm3"
+                                and (self.num_spec == 0 or vllm_config.speculative_config.use_ngram_gpu())
+                                and bool(os.getenv("KAILLM_BENCHMARK_GRAPH_DIR")))
         self.ngram_gpu_match_only = bool(
             vllm_config.speculative_config
             and vllm_config.speculative_config.ngram_gpu_match_only
@@ -102,6 +107,12 @@ class ShortConv(MambaBase, PluggableLayer):
         self.model_config = model_config
         self.cache_config = cache_config
         self.prefix = prefix
+
+    def get_attn_backend(self):
+        if self.full_graph_conv:
+            from vllm_gguf_plugin.inkling.conv_graph import conv_graph_backend
+            return conv_graph_backend("LFM3_SHORT_CONV")
+        return super().get_attn_backend()
 
     def forward_native(
         self,
@@ -239,6 +250,24 @@ class ShortConv(MambaBase, PluggableLayer):
         if attn_metadata_raw is not None:
             assert isinstance(attn_metadata_raw, dict)
             attn_metadata = attn_metadata_raw.get(self.prefix)
+        if self.full_graph_conv and attn_metadata is not None:
+            from vllm_gguf_plugin.inkling.conv_graph import ConvGraphMetadata
+            from vllm_gguf_plugin.lfm3_graph_conv import gated_conv
+
+            if not isinstance(attn_metadata, ConvGraphMetadata):
+                raise ValueError("LFM3 full graphs need persistent convolution metadata")
+            bcx, _ = self.in_proj(hidden_states)
+            b, gate, x = bcx.chunk(3, dim=-1)
+            cache = self.kv_cache[0]
+            state = cache if is_conv_state_dim_first() else cache.transpose(-1, -2)
+            weight = self.conv.weight.view(self.conv.weight.shape[0], self.conv.weight.shape[2])
+            projected, _ = self.out_proj(gated_conv(b, gate, x, weight, self.conv.bias, state, attn_metadata))
+            if self.ngram_gpu_single_active_copy and projected.shape[0] in (1, 4):
+                from vllm.v1.worker.gpu.spec_decode.ngram.conditional_kernels import copy_projection
+                copy_projection(projected, output)
+            else:
+                output.copy_(projected)
+            return
         if attn_metadata is not None:
             assert isinstance(attn_metadata, ShortConvAttentionMetadata)
             conv_state = (

@@ -113,6 +113,21 @@ def hy4_name_map(config, names: set[str]) -> dict[str, str]:
     return mapping
 
 
+def hy4_stage_weight_map(mapping, start, end, layers):
+    """Select the input embedding, transformer blocks and output weights owned by this stage."""
+    owned = {}
+    for name, target in mapping.items():
+        if name.startswith("blk."):
+            belongs = start <= int(name.split(".", 2)[1]) < end
+        elif name == "token_embd.weight":
+            belongs = start == 0
+        else:
+            belongs = end == layers
+        if belongs:
+            owned[name] = target
+    return owned
+
+
 class Hy4GGUFAdapter(BaseGGUFWeightsAdapter):
     @classmethod
     def matches(cls, config):
@@ -129,6 +144,14 @@ class Hy4GGUFAdapter(BaseGGUFWeightsAdapter):
         md = read_gguf_metadata(readers[0])
         config = model_config.hf_config.get_text_config()
         mapping = hy4_name_map(config, set(tensors))
+        # Filter the mapped names before the iterator materializes any tensor.
+        # Each stage maps the same Engram file and reads only rows used by its layers.
+        from vllm.distributed.parallel_state import get_pp_group, model_parallel_is_initialized
+        if model_parallel_is_initialized() and get_pp_group().world_size > 1:
+            from vllm.distributed.utils import get_pp_indices
+            group = get_pp_group()
+            start, end = get_pp_indices(config.num_hidden_layers, group.rank_in_group, group.world_size)
+            mapping = hy4_stage_weight_map(mapping, start, end, config.num_hidden_layers)
         unquantized = []
         for g, target in mapping.items():
             mod = target.rsplit(".", 1)[0]

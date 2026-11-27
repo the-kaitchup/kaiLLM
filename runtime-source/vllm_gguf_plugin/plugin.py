@@ -445,6 +445,9 @@ def register() -> None:
     from .gdn_spec import install as install_gdn_spec
 
     install_gdn_spec()
+    if os.getenv("KAILLM_QWEN35_FULL_GRAPHS") == "1":
+        from .qwen35_graph_gdn import install as install_graph_gdn
+        install_graph_gdn()
 
     from .kv_groups import install as install_kv_groups
 

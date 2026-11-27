@@ -14,10 +14,16 @@ from vllm_gguf_plugin import serve, serving_defaults, serving_policy as policy
 
 
 def prepare(args, inherited, executable=sys.executable):
+    family = serving_defaults.inspect(args.model)
     capability = args.compute_capability or policy.discover_capability()
-    architecture = {"8.6": "sm86", "12.0": "sm120"}.get(capability)
+    architecture = {"8.6": "sm86", "12.0": "sm120", "12.1": "sm121"}.get(capability)
     if architecture is None:
-        raise ValueError("The retained native assets support CUDA 8.6 and 12.0")
+        raise ValueError("Supported CUDA compute capabilities are 8.6, 12.0 and 12.1")
+    if architecture == "sm121":
+        if family["architecture"] != "inkling2_loop":
+            raise ValueError("The DGX Spark target currently supports fixed-loop Inkling GGUFs")
+        if (getattr(args, "pipeline_parallel_size", None) or 1) != 1:
+            raise ValueError("The DGX Spark target uses one GB10")
     package = ROOT / "vllm_gguf_plugin"
     # The benchmark starts with the same closed GGUF environment.
     inherited = {k: v for k, v in inherited.items()
@@ -25,8 +31,9 @@ def prepare(args, inherited, executable=sys.executable):
     selected = policy.load_target(args.catalog, capability, package, inherited)
     core_root = args.core_root or ROOT / "compatible-vllm/core"
     core = policy.verify_core_contract(selected["core_contract"], [str(core_root)])
-    # GGUF-family defaults (tokenizer, memory plans, MTP) fill only unset options.
-    family = serving_defaults.inspect(args.model)
+    if getattr(args, "dspark", None):
+        # The standalone launcher prepares this GGUF before spawning vLLM.
+        sys.path.insert(0, str(ROOT / "gguf-reader"))
     # Qwen3.8 kaiPTQ (ITQ) checkpoints are qualified on the RTX 3060 too; plain Qwen GGUFs only on 12.0.
     if (family["architecture"] == "qwen35" and architecture != "sm120" and not family.get("itq")
             and os.environ.get("KAILLM_ALLOW_QWEN35_SM86") != "1"):
@@ -36,8 +43,16 @@ def prepare(args, inherited, executable=sys.executable):
         args.tokenizer = family["tokenizer"]
     prepared = serve.prepare_command(args, selected, executable, family=family)
     command, environment = prepared["command"], prepared["environment"]
-    if (architecture == "sm86" and prepared["num_speculative_tokens"] == 3
-            and prepared["speculative_method"] == "ngram_gpu"):
+    stages = getattr(args, "pipeline_parallel_size", None) or 1
+    if family["architecture"] == "hy_v4_flash" and stages > 1 and not environment.get("VLLM_PP_LAYER_PARTITION"):
+        from vllm_gguf_plugin.hy4.partition import from_gguf
+
+        # Use the bundled reader, including its definitions for Hy4's low-bit GGUF tensor types.
+        sys.path.insert(0, str(ROOT / "gguf-reader"))
+        counts = from_gguf(args.model, stages)
+        environment["VLLM_PP_LAYER_PARTITION"] = ",".join(map(str, counts))
+    if (architecture == "sm86" and not inherited.get("KAILLM_BENCHMARK_GRAPH_DIR")
+            and prepared["num_speculative_tokens"] == 3 and prepared["speculative_method"] == "ngram_gpu"):
         # Preserve the exact Ampere configuration used in the frozen normal runs.
         index = command.index("--speculative-config") + 1
         spec = json.loads(command[index])
@@ -77,7 +92,9 @@ def prepare(args, inherited, executable=sys.executable):
         cuda_home = str(Path(cuda_home).absolute())
         environment["CUDA_HOME"] = cuda_home
         environment["PATH"] = cuda_home + "/bin:" + environment.get("PATH", "")
-        environment["LD_LIBRARY_PATH"] += ":" + cuda_home + "/lib"
+        environment["LD_LIBRARY_PATH"] = os.pathsep.join(
+            filter(None, (environment.get("LD_LIBRARY_PATH"), cuda_home + "/lib"))
+        )
     return {**prepared, "core_contract": core,
             "compute_capability": capability,
             "verified_native_assets": selected["verified_native_assets"]}

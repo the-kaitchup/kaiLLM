@@ -20,7 +20,7 @@ from ..qwen35_metadata import (
     read_gguf_metadata,
     resolve_gguf_shards,
 )
-from ..weight_utils import gguf_quant_weights_iterator_multi
+from ..weight_utils import gguf_quant_weights_iterator_multi, gguf_tensor_views
 from ..yaqa_gguf import read_yaqa_profile
 from .base import BaseGGUFWeightsAdapter, GGUFLoadSpec
 
@@ -83,6 +83,37 @@ def qwen35_mtp_name_map(num_layers: int) -> dict[str, str]:
         if original.startswith("blk.0.") and ".linear_attn." not in target:
             mapping[mtp + original.removeprefix("blk.0.")] = target
     return mapping
+
+
+def qwen35_fused_row_splits(text_config, tensors, names):
+    """Resolve llama.cpp's contiguous QKV/Z and beta/alpha exports."""
+    splits = {}
+    for layer, kind in enumerate(text_config.layer_types):
+        if kind != "linear_attention":
+            continue
+        prefix = f"blk.{layer}."
+        for fused, first, second in (
+            ("attn_qkv_gate", "attn_qkv", "attn_gate"),
+            ("ssm_beta_alpha", "ssm_beta", "ssm_alpha"),
+        ):
+            source = prefix + fused + ".weight"
+            if source not in tensors:
+                continue
+            targets = (prefix + first + ".weight", prefix + second + ".weight")
+            if names.intersection(targets):
+                raise ValueError(f"Both fused and split GGUF projections present: {source}")
+            shape = tensors[source].shape
+            if len(shape) != 2 or int(shape[0]) != text_config.hidden_size:
+                raise ValueError(f"Invalid GGUF projection width for {source}: {tuple(shape)}")
+            v_heads = int(text_config.linear_num_value_heads)
+            if fused == "attn_qkv_gate":
+                v_rows = v_heads * int(text_config.linear_value_head_dim)
+                qk_rows = 2 * int(text_config.linear_num_key_heads) * int(text_config.linear_key_head_dim)
+                sizes = (qk_rows + v_rows, v_rows)
+            else:
+                sizes = (v_heads, v_heads)
+            splits[source] = tuple(zip(targets, sizes))
+    return splits
 
 
 def qwen35_v_head_permutations(text_config) -> dict[str, torch.Tensor] | None:
@@ -493,6 +524,10 @@ class Qwen35GGUFAdapter(BaseGGUFWeightsAdapter):
                 yaqa_subset=True,
             )
             return self.load_spec
+        row_splits = qwen35_fused_row_splits(text_config, tensors, names)
+        if row_splits:
+            tensors = {t.name: t for t in gguf_tensor_views(tensors.values(), row_splits)}
+            names = (set(tensors) - components) | set(logical)
         mapping = qwen35_name_map(text_config.num_hidden_layers)
         expected = {
             "token_embd.weight",
@@ -557,13 +592,15 @@ class Qwen35GGUFAdapter(BaseGGUFWeightsAdapter):
             gguf_to_hf_name_map=mapping,
             gguf_row_permutations=rows or None,
             gguf_column_permutations=columns or None,
+            gguf_row_splits=row_splits or None,
         )
         return self.load_spec
 
     def prepare_weights(self, model_config) -> Iterable[tuple[str, torch.Tensor]]:
         del model_config
         for name, weight in gguf_quant_weights_iterator_multi(
-            self.load_spec.weights_source, self.load_spec.gguf_to_hf_name_map
+            self.load_spec.weights_source, self.load_spec.gguf_to_hf_name_map,
+            row_splits=self.load_spec.gguf_row_splits,
         ):
             is_type = name.endswith(".qweight_type")
             base = name.removesuffix(".qweight") + ".weight" if name.endswith(".qweight") else name

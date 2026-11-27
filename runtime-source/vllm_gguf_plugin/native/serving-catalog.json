@@ -150,16 +150,25 @@
         "files": {
           "config/speculative.py": "0ca8bf7e5cd5ec83e5d5e5e54d7dc80027e6d7c9985c8044631ae99bddff3bce",
           "forward_context.py": "86959aa929096135a7384fb8391f8b17fbd6e5b7d68db83b5b6dced9878c9de2",
-          "model_executor/layers/mamba/short_conv.py": "ef5480377319e5fc14b42bf4cb3920a92cd072fc58c1022ca9b365c3ffe5c9ba",
+          "model_executor/layers/mamba/short_conv.py": "4e90df098f1b62fd985281aee685f061b69d0180e8307e6e7b543fa093cb1dde",
+          "model_executor/models/hy_v4_flash.py": "a97b997d738583b20aa736b1f5effa72ce584e44f83d8674ac447117e6145ec6",
+          "model_executor/models/inkling2_loop.py": "07d4f2348c8804d0bdc3df954df7edcf6e01ed154af4b4ee5c1eb1692bd13bb2",
+          "model_executor/models/lfm3.py": "e379d909654f57862bfd5b796d1ab831915333d4ee644bc4db432e1e35877d95",
+          "transformers_utils/configs/hy_v4_flash.py": "769f5a368ca73692eef504cc596a69dab4ec13059a1f9128d7ae112d4238520d",
+          "transformers_utils/configs/inkling2_loop.py": "a5aca699d3e25c6daff338d319059ef8901024c9a2f298157fdfa375e043c972",
+          "transformers_utils/configs/lfm3.py": "378431adc69b51e479607a30a2239176b4e5f3c6c7a0309e069ffe1908106153",
           "v1/attention/backends/short_conv_attn.py": "90d95cfc4ed0d98f96187cebe9bc0e60101aad8efaf054546bf9128068009f47",
-          "v1/worker/gpu/cudagraph_utils.py": "a4969870c943b1021b91a17547b29045a0c1a03743de57cf259782bfb66d3f70",
+          "v1/worker/gpu/buffer_utils.py": "2003383dd226d864f5b17f382d1cfd0349aaa222a246a08b0b1f5027825c5a9a",
+          "v1/worker/gpu/cudagraph_utils.py": "2c4e27d7d9425b66232a6d3328d3322d9059d8be6ccaf066b4f7a42ca89bf490",
           "v1/worker/gpu/input_batch.py": "28ee9f154d0dbe12c2467b0aac322ba822687ec7af5c5bffcb7b999874feac06",
-          "v1/worker/gpu/model_runner.py": "cb2e309975c3141c77c4a76201bbc26219fd60aab8cadea52140c936c1dac64f",
+          "v1/worker/gpu/model_runner.py": "4e0c27cbb0882bf7dadd717df3b4a0c608b8eb1b09dbca9d4e6d58edce87d73b",
           "v1/worker/gpu/spec_decode/ngram/conditional.py": "40c3e64190019582223d34b056f4c89b08dfe0f420b4c3f9579d7a186298ca8d",
           "v1/worker/gpu/spec_decode/ngram/conditional_kernels.py": "6de90d5f70b2421456f44714947cd42d339ec404fa11473d460ac821b696dbbf",
-          "v1/worker/gpu/spec_decode/ngram/single_active.py": "b6731e468f7d8f7985f4bc4f88f478b7e7987228c6e64d87dad8761920af7fbf",
-          "v1/worker/gpu/spec_decode/ngram/speculator.py": "429bf902bf75e6a6055435d5561b4236a8d40b716788773f9bab73210c63e92a",
-          "v1/worker/gpu/buffer_utils.py": "2003383dd226d864f5b17f382d1cfd0349aaa222a246a08b0b1f5027825c5a9a"
+          "v1/worker/gpu/spec_decode/ngram/single_active.py": "a5d90b20aa5246e32d3271edd23b61c456d598f143d99496df990a00ac6f8987",
+          "v1/worker/gpu/spec_decode/ngram/speculator.py": "65d44f7a062d80c0d1a7fb0537b1b72ee82a4418d9aee06c068e3f6db26ac6a7",
+          "v1/worker/gpu/warmup.py": "f567db5befe462f4ef5f5be0aeb4aad461c1e729f8066dc3987a1db3e79d055c",
+          "entrypoints/openai/chat_completion/protocol.py": "f82ad6194b8f3dd9f490667a82fdee337a3df2664b27cb2a98b848374b18dd84",
+          "entrypoints/generate/base/protocol.py": "07eb8f33c12d44406f66e2050381b1f7fde7df94632d89026391f190d1656653"
         },
         "package": "vllm",
         "scope": "Required selected source pins within the separately authenticated patched vLLM base. These files are not a complete compatible-base distribution or identity."
@@ -292,16 +301,25 @@
         "files": {
           "config/speculative.py": "0ca8bf7e5cd5ec83e5d5e5e54d7dc80027e6d7c9985c8044631ae99bddff3bce",
           "forward_context.py": "86959aa929096135a7384fb8391f8b17fbd6e5b7d68db83b5b6dced9878c9de2",
-          "model_executor/layers/mamba/short_conv.py": "ef5480377319e5fc14b42bf4cb3920a92cd072fc58c1022ca9b365c3ffe5c9ba",
+          "model_executor/layers/mamba/short_conv.py": "4e90df098f1b62fd985281aee685f061b69d0180e8307e6e7b543fa093cb1dde",
+          "model_executor/models/hy_v4_flash.py": "a97b997d738583b20aa736b1f5effa72ce584e44f83d8674ac447117e6145ec6",
+          "model_executor/models/inkling2_loop.py": "07d4f2348c8804d0bdc3df954df7edcf6e01ed154af4b4ee5c1eb1692bd13bb2",
+          "model_executor/models/lfm3.py": "e379d909654f57862bfd5b796d1ab831915333d4ee644bc4db432e1e35877d95",
+          "transformers_utils/configs/hy_v4_flash.py": "769f5a368ca73692eef504cc596a69dab4ec13059a1f9128d7ae112d4238520d",
+          "transformers_utils/configs/inkling2_loop.py": "a5aca699d3e25c6daff338d319059ef8901024c9a2f298157fdfa375e043c972",
+          "transformers_utils/configs/lfm3.py": "378431adc69b51e479607a30a2239176b4e5f3c6c7a0309e069ffe1908106153",
           "v1/attention/backends/short_conv_attn.py": "90d95cfc4ed0d98f96187cebe9bc0e60101aad8efaf054546bf9128068009f47",
-          "v1/worker/gpu/cudagraph_utils.py": "a4969870c943b1021b91a17547b29045a0c1a03743de57cf259782bfb66d3f70",
+          "v1/worker/gpu/buffer_utils.py": "2003383dd226d864f5b17f382d1cfd0349aaa222a246a08b0b1f5027825c5a9a",
+          "v1/worker/gpu/cudagraph_utils.py": "2c4e27d7d9425b66232a6d3328d3322d9059d8be6ccaf066b4f7a42ca89bf490",
           "v1/worker/gpu/input_batch.py": "28ee9f154d0dbe12c2467b0aac322ba822687ec7af5c5bffcb7b999874feac06",
-          "v1/worker/gpu/model_runner.py": "cb2e309975c3141c77c4a76201bbc26219fd60aab8cadea52140c936c1dac64f",
+          "v1/worker/gpu/model_runner.py": "4e0c27cbb0882bf7dadd717df3b4a0c608b8eb1b09dbca9d4e6d58edce87d73b",
           "v1/worker/gpu/spec_decode/ngram/conditional.py": "40c3e64190019582223d34b056f4c89b08dfe0f420b4c3f9579d7a186298ca8d",
           "v1/worker/gpu/spec_decode/ngram/conditional_kernels.py": "6de90d5f70b2421456f44714947cd42d339ec404fa11473d460ac821b696dbbf",
-          "v1/worker/gpu/spec_decode/ngram/single_active.py": "b6731e468f7d8f7985f4bc4f88f478b7e7987228c6e64d87dad8761920af7fbf",
-          "v1/worker/gpu/spec_decode/ngram/speculator.py": "429bf902bf75e6a6055435d5561b4236a8d40b716788773f9bab73210c63e92a",
-          "v1/worker/gpu/buffer_utils.py": "2003383dd226d864f5b17f382d1cfd0349aaa222a246a08b0b1f5027825c5a9a"
+          "v1/worker/gpu/spec_decode/ngram/single_active.py": "a5d90b20aa5246e32d3271edd23b61c456d598f143d99496df990a00ac6f8987",
+          "v1/worker/gpu/spec_decode/ngram/speculator.py": "65d44f7a062d80c0d1a7fb0537b1b72ee82a4418d9aee06c068e3f6db26ac6a7",
+          "v1/worker/gpu/warmup.py": "f567db5befe462f4ef5f5be0aeb4aad461c1e729f8066dc3987a1db3e79d055c",
+          "entrypoints/openai/chat_completion/protocol.py": "f82ad6194b8f3dd9f490667a82fdee337a3df2664b27cb2a98b848374b18dd84",
+          "entrypoints/generate/base/protocol.py": "07eb8f33c12d44406f66e2050381b1f7fde7df94632d89026391f190d1656653"
         },
         "package": "vllm",
         "scope": "Required selected source pins within the separately authenticated patched vLLM base. These files are not a complete compatible-base distribution or identity."
@@ -374,6 +392,62 @@
         "native/libraries/sm86"
       ],
       "scope": "kaiLLM 0.1.0rc3 serving target."
+    },
+    "12.1": {
+      "assets": {
+        "native/kernels/itq_kernels.cu": "a677f4d66b05ba192d7c333a24cd58619bc036e269df76bc9ee07a9d9d9e2288"
+      },
+      "available": true,
+      "core_contract": {
+        "base_identity": {
+          "base_fast_overlay_receipt_sha256": "6b5d4e94e4d0a50c66a358dce2465f2c29339a918d9d60ee9a8999017e3e1247",
+          "core_source_manifest_sha256": "8a15143f0d7093cffed8dfa2522fa43c66aef809fe254c0370ddee3e910684d8",
+          "parent_snapshot_receipt_sha256": "1f9ae9f9bda589fb98d2e12366b315aa872eced154f092c7fe7c3afc98ef119b"
+        },
+        "files": {
+          "config/speculative.py": "0ca8bf7e5cd5ec83e5d5e5e54d7dc80027e6d7c9985c8044631ae99bddff3bce",
+          "entrypoints/generate/base/protocol.py": "07eb8f33c12d44406f66e2050381b1f7fde7df94632d89026391f190d1656653",
+          "entrypoints/openai/chat_completion/protocol.py": "f82ad6194b8f3dd9f490667a82fdee337a3df2664b27cb2a98b848374b18dd84",
+          "forward_context.py": "86959aa929096135a7384fb8391f8b17fbd6e5b7d68db83b5b6dced9878c9de2",
+          "model_executor/layers/mamba/short_conv.py": "4e90df098f1b62fd985281aee685f061b69d0180e8307e6e7b543fa093cb1dde",
+          "model_executor/models/hy_v4_flash.py": "a97b997d738583b20aa736b1f5effa72ce584e44f83d8674ac447117e6145ec6",
+          "model_executor/models/inkling2_loop.py": "07d4f2348c8804d0bdc3df954df7edcf6e01ed154af4b4ee5c1eb1692bd13bb2",
+          "model_executor/models/lfm3.py": "e379d909654f57862bfd5b796d1ab831915333d4ee644bc4db432e1e35877d95",
+          "transformers_utils/configs/hy_v4_flash.py": "769f5a368ca73692eef504cc596a69dab4ec13059a1f9128d7ae112d4238520d",
+          "transformers_utils/configs/inkling2_loop.py": "a5aca699d3e25c6daff338d319059ef8901024c9a2f298157fdfa375e043c972",
+          "transformers_utils/configs/lfm3.py": "378431adc69b51e479607a30a2239176b4e5f3c6c7a0309e069ffe1908106153",
+          "v1/attention/backends/short_conv_attn.py": "90d95cfc4ed0d98f96187cebe9bc0e60101aad8efaf054546bf9128068009f47",
+          "v1/worker/gpu/buffer_utils.py": "2003383dd226d864f5b17f382d1cfd0349aaa222a246a08b0b1f5027825c5a9a",
+          "v1/worker/gpu/cudagraph_utils.py": "2c4e27d7d9425b66232a6d3328d3322d9059d8be6ccaf066b4f7a42ca89bf490",
+          "v1/worker/gpu/input_batch.py": "28ee9f154d0dbe12c2467b0aac322ba822687ec7af5c5bffcb7b999874feac06",
+          "v1/worker/gpu/model_runner.py": "4e0c27cbb0882bf7dadd717df3b4a0c608b8eb1b09dbca9d4e6d58edce87d73b",
+          "v1/worker/gpu/spec_decode/ngram/conditional.py": "40c3e64190019582223d34b056f4c89b08dfe0f420b4c3f9579d7a186298ca8d",
+          "v1/worker/gpu/spec_decode/ngram/conditional_kernels.py": "6de90d5f70b2421456f44714947cd42d339ec404fa11473d460ac821b696dbbf",
+          "v1/worker/gpu/spec_decode/ngram/single_active.py": "a5d90b20aa5246e32d3271edd23b61c456d598f143d99496df990a00ac6f8987",
+          "v1/worker/gpu/spec_decode/ngram/speculator.py": "65d44f7a062d80c0d1a7fb0537b1b72ee82a4418d9aee06c068e3f6db26ac6a7",
+          "v1/worker/gpu/warmup.py": "f567db5befe462f4ef5f5be0aeb4aad461c1e729f8066dc3987a1db3e79d055c"
+        },
+        "package": "vllm",
+        "scope": "Required selected source pins within the separately authenticated patched vLLM base. These files are not a complete compatible-base distribution or identity."
+      },
+      "environment": {
+        "HUMMING_MAX_PARALLEL_BUILD_WORKERS": "2",
+        "TRITON_F32_DEFAULT": "ieee",
+        "VLLM_ENABLE_V1_MULTIPROCESSING": "1",
+        "VLLM_GGUF_BACKEND": "compact",
+        "VLLM_GGUF_BODY_PREFILL_CACHE": "none",
+        "VLLM_GGUF_ORDINARY_MARLIN_PHYSICAL": "none",
+        "VLLM_GGUF_USE_CUDA": "0",
+        "VLLM_GGUF_YAQA_CUDA_ARCH": "sm121",
+        "VLLM_TARGET_DEVICE": "cuda",
+        "VLLM_USE_BREAKABLE_CUDAGRAPH": "1",
+        "VLLM_USE_FLASHINFER_SAMPLER": "0",
+        "VLLM_USE_V2_MODEL_RUNNER": "1",
+        "VLLM_WORKER_MULTIPROC_METHOD": "spawn"
+      },
+      "environment_paths": {},
+      "library_dirs": [],
+      "scope": "Linux AArch64 DGX Spark, one SM121 GPU, Inkling GGUF serving."
     }
   }
 }

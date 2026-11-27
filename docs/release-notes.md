@@ -1,3 +1,25 @@
+# Unreleased
+
+- Linux x86-64 installs from a source checkout use its serving code with a
+  checksum-verified binary and dependency base.
+- The default LFM3 chat configuration supports OpenAI-compatible function
+  calling. Streamed and complete responses expose thinking separately from
+  the final answer.
+- With the bundled CUDA 13.0 and a GCC 16 or newer default, the launcher can
+  select an installed compatible compiler pair. The installer and
+  `kaillm doctor` report the configuration.
+- Local GGUFs with unsupported architecture or Inkling layout fail during
+  header inspection, before the engine starts.
+- Added an [Inkling source installer for DGX Spark](../README.md#dgx-spark), an
+  optional DSpark-5 draft cache window, and opt-in parallel projections
+  for single-request Dondon XS plain decoding.
+- Added opt-in Inkling Chimachima XS verification on RTX 5090
+  (`KAILLM_INKLING_CHIMA_XS_ROW_STABLE_DS5=1`) and Dondon M prefill and
+  verification kernels on RTX PRO 6000
+  (`KAILLM_INKLING_DONDON_IQ_PREFILL=1` and `KAILLM_INKLING_DONDON_IQ_VERIFY=1`).
+  These options target a single request with BF16 KV, DSpark-5, a 73,728-token
+  context, and 512-token prefill chunks.
+
 # kaiLLM 0.1.0rc6
 
 ITQ tensors at 3.5 and 4 bits per weight, for the v2.0 LFM3 chimachima checkpoints.
@@ -63,8 +85,7 @@ The weights now stay quantized in VRAM, as with llama.cpp.
   slower than with 0.1.0rc3.
 - RTX 3060 and A40 (compute capability 8.6): the resident small-batch decode
   path for YAQA is off, since it needed the full dequantized weight cache.
-- All the speed figures in the README and in docs/speed-results.md were
-  measured again with this release, against llama.cpp 93cf736, on the RTX 3060,
+- The short-context speed figures were measured again with this release, against llama.cpp 93cf736, on the RTX 3060,
   A40, RTX 5090 and RTX Pro 6000. On the RTX 3060, this llama.cpp is much
   faster at batch 8 and 16 than the build I used for the earlier figures, so
   the gains listed below for 0.1.0rc3 are smaller against it.
@@ -91,7 +112,7 @@ Qwen3.8 27B on RTX Pro 6000.
   batches and prefill. Activation block sums now use the quantized values, as
   in current llama.cpp, which lowers the quantization error of Q4_0, Q4_1, Q5_x,
   Q4_K and Q5_K matrices.
-- Lower CPU overhead under WSL, where vLLM cannot use pinned host memory.
+- Lower CPU overhead when pinned host memory is unavailable.
 
 The llama.cpp benchmark baseline was not optimized. See the README for
 the measured gains and slowdowns.

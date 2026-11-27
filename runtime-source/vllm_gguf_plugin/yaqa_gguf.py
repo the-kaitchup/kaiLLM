@@ -12,7 +12,7 @@ from pathlib import Path
 MANIFEST_KEY = "yaqa.manifest"
 RECONSTRUCTION_PRECISION = "inverse-Hadamard-Wscale-signs-FP64-then-FP32-post-scales-v1"
 
-# itq-moe (routed experts, docs/inkling-itq-format.md): rotation block sizes the prep / post kernels instantiate
+# itq-moe (routed experts): rotation block sizes the prep / post kernels instantiate
 ITQ_MOE_BLOCKS_IN = (32, 64, 128, 256, 512, 1024, 2048, 4096)
 ITQ_MOE_BLOCKS_OUT = (16, 32, 64, 128, 256, 512, 1024, 2048, 4096)
 ITQ_TABLE_BITS = {4: 12, 2: 10}
@@ -119,7 +119,7 @@ def validate_yaqa_descriptor(descriptor, tensor_names=None):
                 raise ValueError("Unsupported ITQ rotation")
         required = {"stream", "su", "sv", "wscale", "table"}
     elif codec == "itq-moe":
-        # routed experts: E ITQ matrices [m, n] with per-expert trellis formats (docs/inkling-itq-format.md)
+        # routed experts: E ITQ matrices [m, n] with per-expert trellis formats
         if not isinstance(shape, list) or len(shape) != 3:
             raise ValueError("ITQ expert tensors need a shape [experts, m, n]")
         if descriptor.get("version") != 1 or descriptor.get("L") != 16 or descriptor.get("hash") != "mul" \

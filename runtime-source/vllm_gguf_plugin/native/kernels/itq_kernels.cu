@@ -2777,7 +2777,7 @@ extern "C" int itq_decode_i8(const void* words, const void* table, void* w, int 
   return int(cudaErrorInvalidValue);
 }
 
-// ---- routed experts (codec itq-moe, docs/inkling-itq-format.md) -------------------------------------------------------
+// ---- routed experts (codec itq-moe v1) ------------------------------------------------------------------------------
 // One dp4a GEMV row per routed slot: row r of y is W_{ids[r]} x_{r / act_div}.  The expert (its stream offset in words,
 // format code and wscale) is read on the device, so a decode step needs no host synchronisation (CUDA-graph safe).
 // Experts of one tensor may use different formats: the host launches the kernel once per format code present, and

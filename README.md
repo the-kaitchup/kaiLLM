@@ -1,330 +1,210 @@
 ![kaiLLM banner](docs/images/kaillm-banner.png)
-[Support (buy me GPU hours)](https://buymeacoffee.com/kaitchup) · [Subscribe to The Kaitchup](https://kaitchup.substack.com/subscribe)
 
 # kaiLLM
 
+kaiLLM is an experimental inference engine for GGUF and kaiPTQ models on
+NVIDIA GPUs. It uses vLLM for batching, parts of llama.cpp and ggml for GGUF
+inference, and exposes an OpenAI-compatible API. [vLLM](https://github.com/vllm-project/vllm) ·
+[llama.cpp](https://github.com/ggml-org/llama.cpp)
 
+[Support GPU testing](https://buymeacoffee.com/kaitchup) ·
+[The Kaitchup newsletter](https://kaitchup.substack.com/subscribe)
 
-**Highly experimental. Optimized for LFM3 and Qwen3.8 27B.** Support for other
-models (and Qwen4 27B, if this model exists) is planned.
+## Updates
 
-kaiLLM is an inference engine built on top of [vLLM](https://github.com/vllm-project/vllm),
-using parts of [llama.cpp](https://github.com/ggml-org/llama.cpp) for GGUF support.
-It serves GGUF checkpoints, kaiPTQ checkpoints (YAQA tensors mixed with GGUF tensors), and more,
-through vLLM's batching scheduler and OpenAI-compatible API.
-
-The goal is to support a wider range of complex quantization formats than
-llama.cpp and vLLM currently support, preserve more accuracy at lower precision,
-and make inference faster, especially at high concurrency. Performance depends
-on the checkpoint, GPU and batch size; this is an ongoing project.
-
-The focus is local/workstation GPUs. Current optimization and
-testing cover **RTX 3060, RTX 5090, and RTX Pro 6000**. **RTX 5080 and RTX 3090**
-are on the roadmap. AMD GPUs could be too... I only own an RTX 3060.  If you want to help expand support,
-please consider [supporting GPU time](https://buymeacoffee.com/kaitchup).
+- **Unreleased · November 27, 2026.** Inkling DSpark and expert-kernel
+  improvements on RTX 5090, RTX PRO 6000, and DGX Spark, plus LFM3 tool calling
+  and separate reasoning output. The Linux x86-64 installer now uses the
+  serving code from `main`. [Release notes](docs/release-notes.md#unreleased)
+- **0.1.0rc6.** Added 3.5- and 4-bit ITQ tensors for LFM3 Chimachima v2.
+  [Release notes](docs/release-notes.md#kaillm-010rc6)
+- **0.1.0rc5.** Added Qwen3.8 27B kaiPTQ support on RTX 3060 and DSpine
+  speculative decoding. [Release notes](docs/release-notes.md#kaillm-010rc5)
+- **0.1.0rc4.** Kept weights in their quantized form in VRAM during serving.
+  [Release notes](docs/release-notes.md#kaillm-010rc4)
+- **0.1.0rc3.** Added Qwen3.5 and Qwen3.8 GGUF serving with native MTP on
+  Blackwell. [Release notes](docs/release-notes.md#kaillm-010rc3)
 
 ## Models
 
-Tested models. Other GGUFs with the same architectures (LFM3,
-Qwen3.5 and Qwen3.8) might work too, but I haven't tested them.
+I focused mainly on GPU coverage. Speed optimizations are ongoing. If you
+have a favorite AI agent, it can help make kaiLLM faster.
 
-### LFM3
+Each GPU link opens the model's measurements and configuration limits in
+the speed report. Each listed GPU has at least one completed kaiLLM run for
+that family. Rates apply to the benchmarked checkpoint, batch, and build.
+[Full speed report](speed.md) · [Checkpoint files](speed.md#checkpoint-files)
 
-| Model | Checkpoints | Format |
+| Model | Checkpoints timed in kaiLLM | GPUs with kaiLLM measurements |
 |---|---|---|
-| [kaitchup/LFM3-1.7B-suisui-GGUF](https://huggingface.co/kaitchup/LFM3-1.7B-suisui-GGUF) | 1.00, 1.25 and 1.50 GB | Mixed GGUF tensors |
-| [kaitchup/LFM3-1.7B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/LFM3-1.7B-chimachima-kaiPTQ) | 500, 750, 1000, 1250 and 1500 MB tiers | kaiPTQ (mixed ITQ, QTIP and GGUF tensors) |
-| [LiquidAI/LFM3-1.7B-GGUF](https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF) | QAD-Q4_0 and Q8_0 | GGUF tensors |
-| [AtomicChat/LFM3-1.7B-GGUF](https://huggingface.co/AtomicChat/LFM3-1.7B-GGUF) | AD-IQ3_S, AD-Q5_K_M and AD-Q6_K |   GGUF tensors |
+| **LFM3 1.7B** | [LiquidAI/LFM3-1.7B-GGUF](https://huggingface.co/LiquidAI/LFM3-1.7B-GGUF/tree/cd0c74c575b5c416f3011b5b4c298077f26ca8c2) (QAD-Q4_0) · [kaitchup/LFM3-1.7B-suisui-GGUF](https://huggingface.co/kaitchup/LFM3-1.7B-suisui-GGUF/tree/6fcfa6348c8399bd436b7ccd8a0c5e6c9dfe765b) (Q4_0_XS) · [kaitchup/LFM3-1.7B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/LFM3-1.7B-chimachima-kaiPTQ/tree/f9963f2a326732d3aa3202c316ebe9e7784999ab) (ITQ 750 MB) | [RTX 3090](speed.md#gpu-3090-1-model-lfm) · [RTX 5070 Ti](speed.md#gpu-5070-ti-1-model-lfm) · [RTX 5080](speed.md#gpu-5080-1-model-lfm) · [RTX 5090](speed.md#gpu-5090-1-model-lfm) · [RTX PRO 6000](speed.md#gpu-pro-6000-1-model-lfm) |
+| **DaisyRose 27B** | [kaitchup/DaisyRose-27B-dondon-GGUF](https://huggingface.co/kaitchup/DaisyRose-27B-dondon-GGUF/tree/3592e073925dbdbc65a340fca851fc01b8d2c409) (IQ2_M) · [kaitchup/DaisyRose-27B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/DaisyRose-27B-chimachima-kaiPTQ/tree/6c1a63358c57f5baf2730574ba418195eb7edfa8) (Q2_K_XS) | [RTX 3090](speed.md#gpu-3090-1-model-daisy) · [RTX 5090](speed.md#gpu-5090-1-model-daisy) · [RTX PRO 6000](speed.md#gpu-pro-6000-1-model-daisy) |
+| **Qwen3.8 27B** | [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/tree/4af51b3542f775b0a8e4b310bfb3f17e01c306c9) (UD-Q2_K_XL) · [kaitchup/Qwen3.8-27B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-chimachima-kaiPTQ/tree/aa5396581a0d09201312c0262dcfa2d0e1871eba) (Q2_K_XXS) | [RTX 3090](speed.md#gpu-3090-1-model-qwen) · [RTX 5080](speed.md#gpu-5080-1-model-qwen) · [RTX 5090](speed.md#gpu-5090-1-model-qwen) · [RTX PRO 6000](speed.md#gpu-pro-6000-1-model-qwen) |
+| **Inkling 2 Mini** | [unsloth/Inkling-2-Mini-GGUF](https://huggingface.co/unsloth/Inkling-2-Mini-GGUF/tree/8078d149286eec7193795413b9e0643da6d11fa1) (UD-Q2_K_XL) · [ggml-org/Inkling-2-Mini-GGUF](https://huggingface.co/ggml-org/Inkling-2-Mini-GGUF/tree/0bdc580634ceac4c4d921f452777bf44228de9af) (IQ4_NL) · [kaitchup/Inkling-2-Mini-dondon-GGUF](https://huggingface.co/kaitchup/Inkling-2-Mini-dondon-GGUF/tree/1268c29b21d41c668a5b11044e9e9e2c6f0c2b75) (Q2_K_XS, Q3_K_S, Q3_K_M) · [kaitchup/Inkling-2-Mini-chimachima-kaiPTQ](https://huggingface.co/kaitchup/Inkling-2-Mini-chimachima-kaiPTQ/tree/1b27e927c15a6cde7f717926a25b2ce831d08fc1) (Q2_K_XS, Q3_K_S, Q3_K_M) | [RTX 3090](speed.md#gpu-3090-1-model-inkling) · [RTX 5070 Ti](speed.md#gpu-5070-ti-1-model-inkling) · [RTX 5080](speed.md#gpu-5080-1-model-inkling) · [RTX 5090](speed.md#gpu-5090-1-model-inkling) · [RTX PRO 6000](speed.md#gpu-pro-6000-1-model-inkling) · [DGX Spark](speed.md#gpu-dgx-spark-1-model-inkling) |
+| **Hy4 Flash** | [Xylolabs/Hy4-flash-GGUF](https://huggingface.co/Xylolabs/Hy4-flash-GGUF/tree/cc17e8a68a84db84a367f56fd42fbd40b54b28e2) (IQ2_M-E4) | [RTX PRO 6000](speed.md#gpu-pro-6000-1-model-hy4) |
 
-kaiPTQ checkpoints are stored as .gguf files, but they aren't ordinary GGUFs:
-llama.cpp and other GGUF runtimes can't load them.
+Earlier measurements cover LFM3 on RTX 3060 and A40 and Qwen3.8 Chimachima
+on RTX 3060. [Earlier short-context benchmarks](speed.md#earlier-short-context-benchmarks)
 
-### Qwen3.8
+kaiLLM supports standard GGUF types such as K-quants and IQ formats, plus
+kaiPTQ checkpoints that mix GGUF, YAQA, QTIP, or ITQ tensors in a `.gguf` file.
+kaiPTQ checkpoints require a compatible runtime.
 
-| Model | Checkpoints | Format |
-|---|---|---|
-| [unsloth/Qwen3.8-27B-GGUF](https://huggingface.co/unsloth/Qwen3.8-27B-GGUF) | UD-Q4_K_XL, UD-Q2_K_XL and UD-IQ1_M |   GGUF tensors, with the MTP layer except UD-IQ1_M |
-| [kaitchup/Qwen3.8-27B-chimachima-kaiPTQ](https://huggingface.co/kaitchup/Qwen3.8-27B-chimachima-kaiPTQ) | Q2_K_XXS (6.7 GB) and Q2_K_XS (8.6 GB) | kaiPTQ (mixed ITQ and GGUF tensors), without the MTP layer |
+## Speed
 
-In this release, Qwen3.5 and Qwen3.8 GGUFs only run on Blackwell GPUs (compute
-capability 12.0). The Qwen3.8 chimachima checkpoint also runs on the RTX 3060.
+kaiLLM prefill / decode in tokens/s for batch-one code with 8,192 input and
+65,536 output tokens.
+
+| GPU | LFM3 1.7B QAD-Q4_0 | Inkling 2 Mini Chimachima Q3_K_S |
+|---|---:|---:|
+| [DGX Spark](speed.md#gpu-dgx-spark-1) | — | 697.6 / 49.4 |
+| [RTX 5080](speed.md#gpu-5080-1) | 35,509.3 / 366.0 | 1,144.6 / 86.5 |
+
+LFM3 uses greedy plain decoding. Inkling uses DSpark-5 with model-recommended
+sampling. LFM3 has no DGX Spark measurement.
+
+### Inkling Dondon
+
+kaiLLM throughput in tokens/s for code runs with model-recommended sampling.
+
+| GPU | Dondon GGUF | Batch | Mode | Prefill | Decode |
+|---|---|---:|---|---:|---:|
+| [RTX PRO 6000](speed.md#gpu-pro-6000-1-model-inkling) | Q3_K_M | 1 | Plain | 2,055.0 | 82.1 |
+| RTX PRO 6000 | Q3_K_M | 1 | DSpark-5 | 533.8 | 47.3 |
+| RTX PRO 6000 | Q3_K_M | 8 | Plain | 994.3 | 105.8 |
+| [RTX 5090](speed.md#gpu-5090-1-model-inkling) | Q3_K_S | 1 | Plain | 2,231.4 | 85.0 |
+| RTX 5090 | Q3_K_S | 1 | DSpark-3 | 497.0 | 51.7 |
+| RTX 5090 | Q3_K_M | 1 | Plain | 1,993.6 | 98.0 |
+| [DGX Spark](speed.md#gpu-dgx-spark-1-model-inkling) | Q2_K_XS | 1 | Plain | 641.3 | 36.1 |
+| DGX Spark | Q2_K_XS | 1 | DSpark-5 | 153.7 | 21.9 |
+
+The plain and DSpark-5 runs used separate DGX Spark systems and kaiLLM builds.
+On prose, DSpark-5 reached 7.0 decode tok/s.
+
+### Inkling Chimachima
+
+Both are code runs with model-recommended sampling.
+
+- **RTX 5090 · batch 1 · DSpark-5.** Chimachima Q3_K_M reached **2,565.6
+  prefill and 105.8 decode tok/s**.
+  [Results](speed.md#gpu-5090-1-model-inkling)
+- **RTX PRO 6000 · batch 8 · plain.** Chimachima Q3_K_M reached **4,130.3
+  prefill and 209.4 decode tok/s**.
+  [Results](speed.md#gpu-pro-6000-1-model-inkling)
 
 ## Install
 
-Requirements: Linux + CUDA 13.
+### Linux x86-64
+
+Install Python 3.9 or newer, a C++ compiler, and an NVIDIA driver compatible
+with CUDA 13.
+Install from `main` to use the current serving code with a checksum-verified
+binary and dependency base.
 
 ```bash
-git clone --branch rc6 https://github.com/the-kaitchup/kaiLLM.git
+git clone --branch main https://github.com/the-kaitchup/kaiLLM.git
 cd kaiLLM
 bash install.sh
+~/.local/bin/kaillm doctor
 ```
 
-The installer creates an isolated Python environment and installs the pinned
-runtime.
-The first server start may take several minutes to prepare kernels and CUDA
-graphs.
+The installer prepares an isolated Python 3.12 environment for the checked-out
+source. The first server start may take several minutes to prepare kernels
+and CUDA graphs. The launcher lives at `~/.local/bin/kaillm`.
+`kaillm --version` also shows the checkout fingerprint alongside the package version.
+
+Ordinary Qwen3.5/Qwen3.8 GGUFs use compute capability 12.0 by default.
+The Qwen3.8 27B Chimachima Q2_K_XXS also runs on the 12 GB RTX 3060.
+
+### DGX Spark
+
+Fixed-loop Inkling runs on one GB10 with a source build. Use Linux AArch64,
+CPython 3.12, a CUDA toolkit with `sm_121` and NVRTC support, and a Python
+environment with CUDA-enabled PyTorch and native vLLM built from
+`f3871c3cbf8a608f7ee833ec4c2c5277f77bee41`. Run the installer in that environment.
+
+```bash
+git clone --branch main https://github.com/the-kaitchup/kaiLLM.git
+cd kaiLLM
+bash install.sh
+~/.local/share/kaillm/spark/bin/kaillm doctor
+```
+
+### CUDA host compiler on rolling Linux
+
+The bundled CUDA 13.0 compiler supports GCC through version 15. If a build
+reports `unsupported GNU version`, select an installed compatible GCC and G++
+pair before starting kaiLLM. [NVIDIA CUDA 13.0 compiler requirements](https://docs.nvidia.com/cuda/archive/13.0.2/cuda-installation-guide-linux/index.html#host-compiler-support-policy)
+
+```bash
+export NVCC_CCBIN=/usr/bin/g++-14 CC=/usr/bin/gcc-14
+export CXX=/usr/bin/g++-14 CUDAHOSTCXX=/usr/bin/g++-14
+kaillm doctor
+```
 
 ## Serve a model
 
-This command downloads the 1 GB suisui checkpoint if needed and starts a local
-OpenAI-compatible server:
+Pass a Hugging Face repository and GGUF filename or a local path.
 
 ```bash
-kaillm serve kaitchup/LFM3-1.7B-suisui-GGUF:LFM3-1.7B-suisui-Q4_0_XXS.gguf
-```
-
-A local file works too:
-
-```bash
+# Hugging Face checkpoint
+kaillm serve kaitchup/LFM3-1.7B-suisui-GGUF:LFM3-1.7B-suisui-Q4_0_XS.gguf
+# Local checkpoint
 kaillm serve /path/to/model.gguf
 ```
 
-Qwen3.8 27B works the same way:
+The server defaults to `127.0.0.1:8000`, model name `kaillm`, eight concurrent
+sequence slots, and an 8,192-token context. Use `--device`, `--max-num-seqs`,
+and `--max-model-len` to select the GPU, concurrency, and context size.
+Keep all shards of a split GGUF in the same directory and serve the first
+local shard.
 
 ```bash
-kaillm serve unsloth/Qwen3.8-27B-GGUF:Qwen3.8-27B-UD-Q4_K_XL.gguf
+curl http://127.0.0.1:8000/v1/chat/completions \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"kaillm","messages":[{"role":"user","content":"What is 6 + 7?"}],"max_tokens":256}'
 ```
 
-The Qwen3.8 chimachima checkpoint (early access, see its model card) also runs on a 12 GB RTX 3060:
+### Speculative decoding
 
-```bash
-kaillm serve kaitchup/Qwen3.8-27B-chimachima-kaiPTQ:Qwen3.8-27B-chimachima-Q2_K_XXS.gguf
-```
+| Target | Drafter | Default |
+|---|---|---|
+| LFM3 | Built-in n-gram | Draft length depends on configured concurrency |
+| GGUF with a native MTP head | Built-in MTP | Four draft tokens through eight concurrent slots, off above eight |
+| Qwen3.8 27B | Optional DSpine | Seven draft tokens with one sequence |
+| Inkling 2 Mini on a qualified build | Optional DSpark | Five draft tokens |
 
-The tokenizer, GPU profile and eligible quantization paths are selected
-automatically from the GGUF. LFM3 GGUFs use the LFM3 tokenizer. Qwen3.5 and
-Qwen3.8 GGUFs use their own tokenizer and chat template.
+Set `--spec-tokens 0` to disable automatic n-gram or MTP drafting. Plain
+serving uses no `--dspine` or `--dspark` flag. For an explicit drafter,
+`--spec-tokens` controls the number of draft tokens.
 
-The server listens at `http://127.0.0.1:8000` and uses the model
-name `kaillm`. It defaults to eight concurrent sequences. To change the serving
-capacity, for example:
-
-```bash
-kaillm serve /path/to/model.gguf --max-num-seqs 16
-```
-
-You decide when to use speculative decoding. `--spec-tokens` sets the number of
-draft tokens, at any serving capacity, and `--spec-tokens 0` turns speculation
-off. GGUFs with MTP layers, like the unsloth Qwen3.8 27B GGUFs, draft with their
-MTP layer. GGUFs without MTP layers, like all the LFM3 GGUFs above, use n-gram
-drafting: the draft tokens are copied from earlier text in the context that
-matches the last generated tokens. For example, MTP with 4 draft tokens at 16
-concurrent sequences:
-
-```bash
-kaillm serve unsloth/Qwen3.8-27B-GGUF:Qwen3.8-27B-UD-Q4_K_XL.gguf --max-num-seqs 16 --spec-tokens 4
-```
-
-Without `--spec-tokens`, kaiLLM picks a default from the serving capacity:
-
-- GGUFs with MTP layers: MTP with 4 draft tokens up to 8 concurrent sequences,
-  no speculation above.
-- LFM3 GGUFs: n-gram drafting with 3 draft tokens up to 4 concurrent sequences,
-  fewer up to 8, no speculation above.
-- Qwen3.5 and Qwen3.8 GGUFs without MTP layers: no speculation.
-
-Qwen3.8 27B can also draft with DSpine, a separate drafter, with one sequence
-at a time for now. `--dspine` takes a local directory, a Hugging Face
-repository, or a folder of a repository. The chimachima repository has a 4-bit
-copy of Tencent's DSpine drafter:
+With DSpine on GPUs with 16 GB or less, the launcher defaults to a 1 GiB KV
+cache and 512-token prefill chunks.
 
 ```bash
 kaillm serve kaitchup/Qwen3.8-27B-chimachima-kaiPTQ:Qwen3.8-27B-chimachima-Q2_K_XXS.gguf --max-num-seqs 1 \
   --dspine kaitchup/Qwen3.8-27B-chimachima-kaiPTQ:dspine-b16-int4
 ```
 
-`--spec-tokens` sets the number of draft tokens, 7 by default. Tencent's
-original drafter, `tencent/Qwen3.8-27B-DSpine-b16`, is converted once to the
-same 4-bit format. On GPUs with 16 GB or less, `--dspine` defaults to a 1 GiB
-KV cache and 512-token prefill chunks, which keep an 8,192-token context next
-to the drafter on a 12 GB RTX 3060.
-
-Send a request:
-
 ```bash
-curl http://127.0.0.1:8000/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"kaillm","messages":[{"role":"user","content":"What is 6 + 7? Answer with the number only."}],"temperature":1.0,"top_p":0.95,"top_k":20,"max_tokens":4096,"chat_template_kwargs":{"enable_thinking":true}}'
+kaillm serve /path/to/Inkling.gguf --max-num-seqs 1 --dspark /path/to/drafter.gguf
 ```
 
-## Speed
+### LFM3 tools and reasoning
 
-Unless stated otherwise, the figures below were obtained without speculative decoding.
-
-For a single sequence, kaiLLM can still be much slower than llama.cpp, especially on the RTX 5090. Most of the optimization work has focused on batching.
-
-**The llama.cpp baseline was not optimized.** All the comparisons use llama.cpp master (93cf736).
-
-Generation: 512 input / 256 output tokens. Prefill: 2048 input tokens. Rates are batch totals in tokens/s.
-
-**These numbers aren't realistic for real use cases.** They are promising, but better benchmarks are necessary and planned.
-
-### Qwen3.8 27B: kaiLLM vs llama.cpp (same GGUF)
-
-I optimized kaiLLM for Qwen3.8 27B on a rented RTX Pro 6000 (Blackwell, 96 GB). Both engines ran the same unsloth GGUFs in the same session. Each figure is the median of 3 to 5 runs. Rates are kaiLLM / llama.cpp in tokens/s.
-
-Without speculative decoding:
-
-| Checkpoint | Batch 1 | Batch 2 | Batch 8 | Batch 16 | Prefill |
-|---|---:|---:|---:|---:|---:|
-| UD-Q4_K_XL | 67.8 / 66.4 (**+2.1%**) | 122.6 / 116.8 (**+5.0%**) | 344.0 / 260.8 (**+31.9%**) | 502.3 / 353.3 (**+42.2%**) | 4,736 / 3,198 (**+48.1%**) |
-| UD-Q2_K_XL | 94.8 / 92.7 (**+2.3%**) | 162.6 / 153.8 (**+5.7%**) | 355.5 / 273.9 (**+29.8%**) | 508.1 / 353.0 (**+43.9%**) | 4,466 / 3,001 (**+48.8%**) |
-| UD-IQ1_M | 81.4 / 109.2 (-25.5%) | 115.0 / 172.4 (-33.3%) | 168.5 / 287.2 (-41.3%) | 138.6 / 333.9 (-58.5%) | 549 / 3,091 (-82.2%) |
-
-UD-IQ1_M was measured with kaiLLM 0.1.0rc5. kaiLLM's kernels for the IQ1_M and IQ2 formats aren't optimized yet: llama.cpp is much faster with this file.
-
-
-With MTP speculative decoding, each engine at its best draft length (2, 3 or 4) for each batch size:
-
-| Checkpoint | Batch 1 | Batch 2 | Batch 8 | Batch 16 |
-|---|---:|---:|---:|---:|
-| UD-Q4_K_XL | 140.3 (n=4) / 122.3 (n=4) (**+14.7%**) | 223.9 (n=3) / 187.4 (n=2) (**+19.5%**) | 544.4 (n=3) / 316.5 (n=2) (**+72.0%**) | 620.6 (n=2) / 396.8 (n=3) (**+56.4%**) |
-| UD-Q2_K_XL | 153.6 (n=4) / 137.3 (n=3) (**+11.9%**) | 254.2 (n=2) / 210.4 (n=2) (**+20.8%**) | 593.8 (n=3) / 347.3 (n=3) (**+71.0%**) | 631.0 (n=2) / 382.3 (n=2) (**+65.1%**) |
-
-
-### chimachima kaiPTQ (kaiLLM) vs LiquidAI Q4_K_M (llama.cpp)
-
-llama.cpp can't run kaiPTQ checkpoints, so the baseline is LiquidAI's Q4_K_M GGUF. These rows were measured with kaiLLM 0.1.0rc4 and the first versions of the 500 MB, 750 MB and 1000 MB checkpoints.
-
-| GPU | Checkpoint | Batch 1 | Batch 8 | Batch 16 | Prefill |
-|---|---|---:|---:|---:|---:|
-| RTX 3060 | chimachima 500 MB | 147.8 / 194.6 (-24.0%) | 584.3 / 582.3 (**+0.3%**) | 819.9 / 954.4 (-14.1%) | 4,273 / 7,917 (-46.0%) |
-| RTX 3060 | chimachima 750 MB | 155.8 / 194.6 (-19.9%) | 587.4 / 582.3 (**+0.9%**) | 799.8 / 954.4 (-16.2%) | 4,235 / 7,917 (-46.5%) |
-| RTX 3060 | chimachima 1000 MB | 166.0 / 194.6 (-14.7%) | 585.3 / 582.3 (**+0.5%**) | 806.0 / 954.4 (-15.5%) | 4,246 / 7,917 (-46.4%) |
-| RTX 3060 | chimachima 1250 MB | 169.4 / 194.6 (-12.9%) | 617.3 / 582.3 (**+6.0%**) | 1,013 / 954.4 (**+6.2%**) | 6,073 / 7,917 (-23.3%) |
-| RTX 3060 | chimachima 1500 MB | 167.5 / 194.6 (-13.9%) | 610.5 / 582.3 (**+4.8%**) | 1,175 / 954.4 (**+23.1%**) | 7,824 / 7,917 (-1.2%) |
-| A40 | chimachima 500 MB | 233.0 / 300.0 (-22.3%) | 1,040 / 1,106 (-6.0%) | 1,607 / 1,557 (**+3.2%**) | 11,021 / 15,561 (-29.2%) |
-| A40 | chimachima 750 MB | 221.7 / 300.0 (-26.1%) | 1,047 / 1,106 (-5.3%) | 1,568 / 1,557 (**+0.7%**) | 10,983 / 15,561 (-29.4%) |
-| A40 | chimachima 1000 MB | 241.1 / 300.0 (-19.6%) | 1,039 / 1,106 (-6.1%) | 1,553 / 1,557 (-0.3%) | 11,087 / 15,561 (-28.8%) |
-| A40 | chimachima 1250 MB | 253.4 / 300.0 (-15.5%) | 1,193 / 1,106 (**+7.9%**) | 1,775 / 1,557 (**+14.0%**) | 14,158 / 15,561 (-9.0%) |
-| A40 | chimachima 1500 MB | 261.6 / 300.0 (-12.8%) | 1,229 / 1,106 (**+11.1%**) | 1,838 / 1,557 (**+18.0%**) | 16,165 / 15,561 (**+3.9%**) |
-| RTX 5090 | chimachima 500 MB | 461.3 / 630.0 (-26.8%) | 2,051 / 2,100 (-2.3%) | 2,872 / 2,746 (**+4.6%**) | 30,814 / 31,900 (-3.4%) |
-| RTX 5090 | chimachima 750 MB | 426.3 / 630.0 (-32.3%) | 1,926 / 2,100 (-8.3%) | 2,844 / 2,746 (**+3.6%**) | 30,381 / 31,900 (-4.8%) |
-| RTX 5090 | chimachima 1000 MB | 475.9 / 630.0 (-24.5%) | 1,971 / 2,100 (-6.2%) | 2,926 / 2,746 (**+6.6%**) | 30,764 / 31,900 (-3.6%) |
-| RTX 5090 | chimachima 1250 MB | 446.5 / 630.0 (-29.1%) | 2,472 / 2,100 (**+17.7%**) | 3,550 / 2,746 (**+29.3%**) | 39,675 / 31,900 (**+24.4%**) |
-| RTX 5090 | chimachima 1500 MB | 437.7 / 630.0 (-30.5%) | 2,974 / 2,100 (**+41.6%**) | 4,369 / 2,746 (**+59.1%**) | 46,679 / 31,900 (**+46.3%**) |
-
-### Qwen3.8 27B kaiPTQ (kaiLLM) vs UD-IQ1_M (llama.cpp)
-
-llama.cpp can't run kaiPTQ checkpoints, so the baseline is unsloth's UD-IQ1_M GGUF, which has the same file size. Measured with kaiLLM 0.1.0rc5. On the RTX 3060, both engines served 16 sequences with a shorter context than in the other tables, to fit in 12 GB next to the desktop. Each figure is the median of 3 to 5 runs.
-
-| GPU | Checkpoint | Batch 1 | Batch 2 | Batch 8 | Batch 16 | Prefill |
-|---|---|---:|---:|---:|---:|---:|
-| RTX 3060 | chimachima Q2_K_XXS / UD-IQ1_M | 26.7 / 23.5 (**+13.6%**) | 37.9 / 34.6 (**+9.5%**) | 69.7 / 51.9 (**+34.3%**) | 68.3 / 70.8 (-3.5%) | 966 / 527 (**+83.3%**) |
-| RTX Pro 6000 | chimachima Q2_K_XXS / UD-IQ1_M | 106.3 / 109.2 (-2.7%) | 184.4 / 172.4 (**+7.0%**) | 528.6 / 287.2 (**+84.1%**) | 774.5 / 333.9 (**+132.0%**) | 4,772 / 3,091 (**+54.4%**) |
-
-With DSpine (`--dspine`, one sequence), in a chat with thinking enabled (temperature 1.0, top-p 0.95, top-k 20; 16 everyday prompts of up to 1,024 generated tokens), kaiLLM generates the chimachima checkpoint's tokens 1.85× faster on the RTX Pro 6000 (207.8 instead of 112.1 tokens/s) and 1.92× faster on the RTX 3060 (52.3 instead of 27.2 tokens/s).
-
-### suisui: kaiLLM vs llama.cpp (same GGUF)
-
-
-| GPU | Checkpoint | Batch 1 | Batch 2 | Batch 8 | Batch 16 | Prefill |
-|---|---|---:|---:|---:|---:|---:|
-| RTX 3060 | suisui Q4_0_XXS | 223.9 / 207.1 (**+8.1%**) | 402.3 / 363.5 (**+10.7%**) | 780.9 / 636.4 (**+22.7%**) | 1,407 / 1,008 (**+39.5%**) | 8,836 / 8,261 (**+7.0%**) |
-| RTX 3060 | suisui Q4_0_XS | 196.9 / 174.2 (**+13.0%**) | 353.2 / 311.7 (**+13.3%**) | 783.0 / 636.1 (**+23.1%**) | 1,320 / 947.4 (**+39.3%**) | 8,970 / 8,147 (**+10.1%**) |
-| RTX 3060 | suisui Q8_0_S | 168.6 / 152.4 (**+10.6%**) | 315.8 / 275.6 (**+14.6%**) | 764.2 / 624.9 (**+22.3%**) | 1,245 / 910.8 (**+36.6%**) | 8,914 / 8,313 (**+7.2%**) |
-| A40 | suisui Q4_0_XXS | 321.2 / 329.0 (-2.4%) | 596.7 / 579.6 (**+3.0%**) | 1,467 / 1,223 (**+19.9%**) | 2,198 / 1,620 (**+35.6%**) | 17,499 / 15,375 (**+13.8%**) |
-| A40 | suisui Q4_0_XS | 296.7 / 289.5 (**+2.5%**) | 533.5 / 506.1 (**+5.4%**) | 1,449 / 1,209 (**+19.9%**) | 2,069 / 1,552 (**+33.3%**) | 17,961 / 16,264 (**+10.4%**) |
-| A40 | suisui Q8_0_S | 261.1 / 259.0 (**+0.8%**) | 475.9 / 461.5 (**+3.1%**) | 1,383 / 1,152 (**+20.1%**) | 1,948 / 1,474 (**+32.2%**) | 17,564 / 16,293 (**+7.8%**) |
-| RTX 5090 | suisui Q4_0_XXS | 441.7 / 636.7 (-30.6%) | 898.5 / 1,075 (-16.4%) | 3,012 / 2,279 (**+32.1%**) | 4,891 / 2,806 (**+74.3%**) | 53,788 / 37,511 (**+43.4%**) |
-| RTX 5090 | suisui Q4_0_XS | 463.5 / 571.5 (-18.9%) | 899.8 / 985.8 (-8.7%) | 3,044 / 2,219 (**+37.2%**) | 4,788 / 2,757 (**+73.7%**) | 55,408 / 35,789 (**+54.8%**) |
-| RTX 5090 | suisui Q8_0_S | 459.8 / 533.1 (-13.7%) | 942.1 / 849.4 (**+10.9%**) | 2,946 / 2,144 (**+37.4%**) | 4,161 / 2,630 (**+58.2%**) | 56,181 / 32,847 (**+71.0%**) |
-
-### Other GGUFs: kaiLLM vs llama.cpp (same GGUF)
-
-These checkpoints use kaiLLM's shared GGUF kernels, without further optimization
-for the individual checkpoints.
-
-| GPU | Checkpoint | Batch 1 | Batch 8 | Batch 16 | Prefill |
-|---|---|---:|---:|---:|---:|
-| RTX 3060 | AtomicChat AD-IQ3_S | 210.5 / 187.0 (**+12.6%**) | 764.8 / 612.5 (**+24.9%**) | 1,356 / 979.5 (**+38.4%**) | 8,574 / 8,142 (**+5.3%**) |
-| RTX 3060 | LiquidAI QAD-Q4_0 | 220.5 / 204.3 (**+7.9%**) | 806.1 / 656.4 (**+22.8%**) | 1,417 / 1,011 (**+40.1%**) | 8,923 / 8,304 (**+7.5%**) |
-| RTX 3060 | AtomicChat AD-Q5_K_M | 188.7 / 176.0 (**+7.2%**) | 647.5 / 555.9 (**+16.5%**) | 1,273 / 936.5 (**+35.9%**) | 8,081 / 7,663 (**+5.5%**) |
-| RTX 3060 | AtomicChat AD-Q6_K | 163.6 / 154.5 (**+5.9%**) | 647.3 / 577.7 (**+12.0%**) | 1,171 / 881.2 (**+32.9%**) | 8,040 / 7,641 (**+5.2%**) |
-| RTX 3060 | LiquidAI Q8_0 | 146.7 / 138.3 (**+6.1%**) | 732.3 / 581.3 (**+26.0%**) | 1,153 / 845.3 (**+36.4%**) | 8,815 / 8,298 (**+6.2%**) |
-| A40 | AtomicChat AD-IQ3_S | 331.2 / 316.8 (**+4.5%**) | 1,514 / 1,165 (**+30.0%**) | 2,199 / 1,573 (**+39.8%**) | 18,714 / 16,037 (**+16.7%**) |
-| A40 | LiquidAI QAD-Q4_0 | 330.3 / 321.4 (**+2.8%**) | 1,534 / 1,218 (**+26.0%**) | 2,162 / 1,541 (**+40.3%**) | 18,234 / 15,699 (**+16.1%**) |
-| A40 | AtomicChat AD-Q5_K_M | 286.2 / 265.2 (**+7.9%**) | 1,319 / 1,038 (**+27.1%**) | 1,986 / 1,442 (**+37.7%**) | 17,170 / 14,685 (**+16.9%**) |
-| A40 | AtomicChat AD-Q6_K | 247.7 / 247.5 (**+0.1%**) | 1,286 / 1,028 (**+25.1%**) | 1,832 / 1,351 (**+35.7%**) | 17,433 / 15,216 (**+14.6%**) |
-| A40 | LiquidAI Q8_0 | 225.7 / 211.6 (**+6.7%**) | 1,310 / 992.3 (**+32.0%**) | 1,812 / 1,281 (**+41.4%**) | 17,917 / 15,606 (**+14.8%**) |
-| RTX 5090 | AtomicChat AD-IQ3_S | 460.4 / 614.4 (-25.1%) | 2,622 / 2,143 (**+22.4%**) | 4,481 / 2,902 (**+54.4%**) | 56,525 / 37,255 (**+51.7%**) |
-| RTX 5090 | LiquidAI QAD-Q4_0 | 454.4 / 641.7 (-29.2%) | 2,804 / 2,535 (**+10.6%**) | 4,675 / 2,979 (**+56.9%**) | 52,507 / 28,458 (**+84.5%**) |
-| RTX 5090 | AtomicChat AD-Q5_K_M | 485.1 / 560.8 (-13.5%) | 3,010 / 1,920 (**+56.8%**) | 4,409 / 2,702 (**+63.2%**) | 47,061 / 35,601 (**+32.2%**) |
-| RTX 5090 | AtomicChat AD-Q6_K | 474.3 / 516.9 (-8.2%) | 2,938 / 2,026 (**+45.1%**) | 4,022 / 2,643 (**+52.1%**) | 49,160 / 30,349 (**+62.0%**) |
-| RTX 5090 | LiquidAI Q8_0 | 452.5 / 497.3 (-9.0%) | 2,966 / 2,116 (**+40.2%**) | 4,188 / 2,700 (**+55.1%**) | 53,215 / 27,689 (**+92.2%**) |
-
-[All recorded kaiLLM speeds and batches](docs/speed-results.md).
-
-## Optimization coverage
-
-The matrix distinguishes checkpoints covered by the optimization work from
-checkpoints benchmarked with the existing implementation. Suisui was optimized on
-the RTX 3060, and Qwen3.8 27B on the RTX Pro 6000. The Qwen3.8 chimachima checkpoint
-was also optimized on the RTX 3060.
-
-| Model checkpoint | RTX 3060 | A40 | RTX 5090 |
-|---|---|---|---|
-| Chimachima 500 MB | Optimized | Optimized | Optimized |
-| Chimachima 750 MB | Optimized | Optimized | Optimized |
-| Chimachima 1000 MB | Optimized | Optimized | Optimized |
-| Chimachima 1250 MB | Optimized | Optimized | Optimized |
-| Chimachima 1500 MB | Optimized | Optimized | Optimized |
-| AtomicChat AD-IQ3_S | Shared kernel coverage | Shared kernel coverage | Shared kernel coverage |
-| LiquidAI QAD-Q4_0 | Shared kernel coverage | Shared kernel coverage | Shared kernel coverage |
-| AtomicChat AD-Q5_K_M | Shared kernel coverage | Shared kernel coverage | Shared kernel coverage |
-| AtomicChat AD-Q6_K | Shared kernel coverage | Shared kernel coverage | Shared kernel coverage |
-| LiquidAI Q8_0 | Shared kernel coverage | Shared kernel coverage | Shared kernel coverage |
-| Suisui Q4_0_XXS | Optimized | Benchmark only | Benchmark only |
-| Suisui Q4_0_XS | Optimized | Benchmark only | Benchmark only |
-| Suisui Q8_0_S | Optimized | Benchmark only | Benchmark only |
-
-| Model checkpoint | RTX Pro 6000 |
-|---|---|
-| Qwen3.8 27B UD-Q4_K_XL | Optimized |
-| Qwen3.8 27B UD-Q2_K_XL | Optimized |
-| Qwen3.8 27B chimachima Q2_K_XXS | Optimized |
-
-**Optimized** marks checkpoint/GPU combinations used to tune and validate the
-kernels and serving profiles. Tuning used ngram speculative decoding with
-3 speculative tokens per step at batches 1 and 2, 1 at batch 8, and speculation
-disabled at batch 16. The speed comparisons above use speculation disabled in
-both engines, except for the Qwen3.8 MTP table.
-
-**Shared kernel coverage** marks public GGUFs measured with the improved format
-paths. **Benchmark only** marks tests performed without further tuning.
-
-Profiles are selected by GPU architecture, tensor format, shape and serving
-capacity. Performance at other models, batches and GPUs still needs testing.
-
-## Quantization support
-
-- Load GGUF files directly, including mixed tensor formats.
-- Load kaiPTQ checkpoints, which combine GGUF and YAQA tensors in one file.
-- Load LFM3 and Qwen3.8 kaiPTQ checkpoints with ITQ tensors: trellis codes
-  with an integer decode table, from 1.25 to 4 bits per weight.
-- Support K-quants, IQ formats and YAQA QTIP bit widths, with fallback paths
-  for formats without an optimized native kernel.
-- Use separate prefill and decode paths, CUDA graphs and automatic hardware
-  profiles for batching.
-
-The packaged reader recognizes 35 storage types. Fallback reconstruction
-supports QTIP 1–8 bits, ternary 1.6-bit and scalar-int4. Optimized GPU coverage is
-a subset of that format coverage.
-
-## Roadmap
-
-- Broader model support, and Qwen3.5/Qwen3.8 GGUFs on Ampere GPUs (RTX 3060, RTX 3090, A40).
-- RTX 5080 and RTX 3090 qualification and optimization.
-- More native paths for kaiPTQ checkpoints and better concurrency.
-- DSpine with several concurrent sequences, and faster kernels for the IQ1_M and IQ2 formats.
+The current source accepts function schemas in `tools` and returns structured
+`tool_calls` with the standard LFM3 chat template. Thinking is returned
+separately from final content in both streaming and complete responses. Read
+`reasoning` or `reasoning_content`. Set
+`chat_template_kwargs.enable_thinking=false` for direct answers or
+`include_reasoning=false` to omit thinking from the response. Disable automatic
+tool choice with `--no-enable-auto-tool-choice`. For custom templates, select
+matching parsers via `--tool-call-parser` and `--reasoning-parser`.
+[Release notes](docs/release-notes.md#unreleased)
 
 ## License and acknowledgments
 
-kaiLLM uses **Apache-2.0**. See [LICENSE](LICENSE).
-It builds on vLLM and uses parts of llama.cpp/ggml. Third-party components retain
-their original licenses and notices; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+kaiLLM uses Apache-2.0. Third-party components retain their own licenses.
+[License](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md)
 
-Thanks to the vLLM, llama.cpp/ggml, PyTorch, Humming and model-author communities.
-
-[Support the project](https://buymeacoffee.com/kaitchup) · [Get updates in the newsletter](https://kaitchup.substack.com/subscribe)
+Thanks to the vLLM, llama.cpp/ggml, PyTorch, Humming, and model-author communities.

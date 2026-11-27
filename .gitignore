@@ -9,6 +9,7 @@ dist/
 releases/
 artifacts/
 /benchmark-results/
+/speed-by-model.md
 /experiments/
 /runs/
 /checkpoints/

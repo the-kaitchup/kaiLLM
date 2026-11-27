@@ -15,6 +15,7 @@ widened inside the next op (no separate cast kernels). Tensor / pipeline paralle
 from __future__ import annotations
 
 import math
+import os
 from collections.abc import Iterable
 
 import torch
@@ -24,7 +25,7 @@ from vllm.config import VllmConfig
 from vllm.model_executor.layers.linear import ReplicatedLinear
 from vllm.model_executor.layers.logits_processor import LogitsProcessor
 from vllm.model_executor.layers.vocab_parallel_embedding import ParallelLMHead, VocabParallelEmbedding
-from vllm.model_executor.models.interfaces import HasInnerState, IsHybrid
+from vllm.model_executor.models.interfaces import EagleModelMixin, HasInnerState, IsHybrid, SupportsEagle3
 from vllm.sequence import IntermediateTensors
 
 from vllm_gguf_plugin.inkling import glue as G
@@ -32,8 +33,11 @@ from vllm_gguf_plugin.inkling import ref as R
 from vllm_gguf_plugin.inkling.attention import attend, make_kv_cache
 from vllm_gguf_plugin.inkling.conv import conv_step, make_conv_state
 from vllm_gguf_plugin.inkling.moe import InklingExperts, route
+from vllm_gguf_plugin.inkling import chima_verifier, projection_streams, spark_verify_router
 
 CTRL = ("q", "k", "v", "ffn")
+ROW_DYNAMIC_CONV = os.getenv("KAILLM_SPARK_DSPARK5_ROW_DYNAMIC_CONV") == "1"
+SPARK_ROW_SINK = os.environ.get("KAILLM_SPARK_DSPARK5_ROW_SINK") == "1"
 
 
 def _param(*shape):
@@ -64,6 +68,10 @@ class InklingLayer(nn.Module):
         a.rel_proj, a.sink_proj = lin("rel_proj", D, nrel * H), lin("sink_proj", D, H)
         if not self.swa:
             a.k_conv_proj, a.v_conv_proj = lin("k_conv_proj", D, nconv * Hkv), lin("v_conv_proj", D, nconv * Hkv)
+        self.projection_streams = projection_streams.prepare(a)
+        # The 5080's qualified two-slot allocation releases intermediates at their last consumer.
+        self.release_projection_inputs = bool(self.projection_streams and self.projection_streams[0] == 2
+                                              and torch.cuda.get_device_name() == "NVIDIA GeForce RTX 5080")
         a.q_clip, a.rel_clip = _param(H, hd), _param(H, nrel)
         self.extent = c.sliding_window if self.swa else c.relative_extent
         a.rel_bias = _param(self.extent, nrel)
@@ -99,6 +107,11 @@ class InklingLayer(nn.Module):
         y = m(x if x.dtype == self.act_dtype else x.to(self.act_dtype))
         return y[0] if isinstance(y, tuple) else y
 
+    def _lin_dynamic(self, projection, x):
+        if chima_verifier.active() or (ROW_DYNAMIC_CONV and spark_verify_router.active()):
+            return torch.cat([self._lin(projection, row) for row in x.split(1)], dim=0)
+        return self._lin(projection, x)
+
     def forward(self, x, blocks: list, positions, tau, kv, conv, messages=None, pass_index: int = 0):
         a = self.attn
         T, D = x.shape
@@ -114,26 +127,52 @@ class InklingLayer(nn.Module):
         dt, f32 = self.act_dtype, torch.float32
         if self.swa:
             if messages is not None:
-                inputs = [G.rms(t, self.attn_norm, self.eps, dt) for t in inputs]
+                inputs = [G.attention_rms(t, self.attn_norm, self.eps, dt, chima_rows=j < 2)
+                          for j, t in enumerate(inputs)]
             else:
-                inputs = [G.rms(inputs[0], self.attn_norm, self.eps, dt)] * 3
+                inputs = [G.attention_rms(inputs[0], self.attn_norm, self.eps, dt, chima_rows=True)] * 3
         else:
-            inputs = [G.rms(inputs[0], self.q_norm, self.eps, dt), G.rms(inputs[1], self.k_norm, self.eps, dt),
-                      G.rms(inputs[2], self.v_norm, self.eps, dt)]
-        q = self._lin(a.q_proj, inputs[0])
-        kp = self._lin(a.k_proj, inputs[1])
-        vp = self._lin(a.v_proj, inputs[2])
-        dk = None if self.swa else self._lin(a.k_conv_proj, inputs[1])
-        dv = None if self.swa else self._lin(a.v_conv_proj, inputs[2])
+            inputs = [G.attention_rms(t, norm, self.eps, dt, chima_rows=True)
+                      for t, norm in zip(inputs, (self.q_norm, self.k_norm, self.v_norm), strict=True)]
+        plan = self.projection_streams
+        parallel = (plan[1] if plan and T == plan[0] and inputs[0].is_cuda and inputs[0].dtype == torch.bfloat16
+                    and not chima_verifier.active() else None)
+        release = self.release_projection_inputs
+        if parallel:
+            values = projection_streams.project(parallel, self._lin, inputs)
+            take = values.pop if release else values.get
+            q, kp, vp = take('q_proj'), take('k_proj'), take('v_proj')
+            dk, dv = take('k_conv_proj', None), take('v_conv_proj', None)
+        else:
+            q = self._lin(a.q_proj, inputs[0])
+            kp = self._lin(a.k_proj, inputs[1])
+            vp = self._lin(a.v_proj, inputs[2])
+            dk = None if self.swa else self._lin_dynamic(a.k_conv_proj, inputs[1])
+            dv = None if self.swa else self._lin_dynamic(a.v_conv_proj, inputs[2])
+        query_input = inputs[0]
+        if release:
+            del inputs
         k = conv_step(conv, kp, a.k_conv, 0, dk, self.Hkv, f32)
+        if release:
+            del kp, dk
         v = conv_step(conv, vp, a.v_conv, self.kvd, dv, self.Hkv, f32)
-        rel = self._lin(a.rel_proj, inputs[0])
+        if release:
+            del vp, dv
+        rel = take('rel_proj') if parallel else self._lin(a.rel_proj, query_input)
         q, k, v, rel = G.post_projection(q, k, v, rel, a.q_clip, a.rel_clip, tau, self.qk_clip, self.rel_clip_thr,
                                          self.eps, self.H, self.Hkv, self.hd, self.nrel, not self.swa)
-        sink = self._lin(a.sink_proj, inputs[0])
+        if chima_verifier.active() or (SPARK_ROW_SINK and 2 <= T <= 6 and spark_verify_router.active()):
+            sink = torch.cat([self._lin(a.sink_proj, row) for row in query_input.split(1, dim=0)], dim=0)
+        else:
+            sink = take('sink_proj') if parallel else self._lin(a.sink_proj, query_input)
         att = attend(kv, q, k, v, rel, sink, a.rel_bias, positions, 1.0 / math.sqrt(self.hd), self.window,
                      self.extent)
-        att = G.gate_attn(att, self._lin(a.gate_proj, inputs[0]), dt)
+        if release:
+            del q, k, v, rel, sink
+        gate = take('gate_proj') if parallel else self._lin(a.gate_proj, query_input)
+        att = G.gate_attn(att, gate, dt)
+        if release:
+            del query_input, gate
         out = conv_step(conv, self._lin(a.o_proj, att), a.post_conv, 2 * self.kvd, None, 1, f32)
         if self.layer % self.block == 0:
             blocks.append(inp_sa)
@@ -144,14 +183,16 @@ class InklingLayer(nn.Module):
         h = G.mix(blocks, x, self.ffn_res_query)[:, 0]
         if messages is not None:
             h = G.control(h, messages[:, 3], self.ctrl_ffn_down, self.ctrl_ffn_gain, self.ctrl_ffn_forget)
-        h, h_dt = G.rms_pair(h, self.ffn_norm, self.eps, dt)
+        h, h_dt = chima_verifier.ffn_pair(G.rms_pair, h, self.ffn_norm, self.eps, dt)
         ids, w = G.route(h, self.router, self.router_bias, self.experts.k, self.experts.w_scale)
         y = self.experts(h_dt, ids, w, pass_index, f32)
         y = conv_step(conv, y, self.ffn_post_conv, 2 * self.kvd + D, None, 1, f32)
         return ffn_inp + y
 
 
-class InklingModel(nn.Module):
+class InklingModel(nn.Module, EagleModelMixin):
+    start_layer = 0
+
     def __init__(self, *, vllm_config: VllmConfig, prefix: str = "model"):
         super().__init__()
         c = vllm_config.model_config.hf_text_config
@@ -187,11 +228,17 @@ class InklingModel(nn.Module):
     def forward(self, input_ids, positions, intermediate_tensors=None, inputs_embeds=None):
         c = self.config
         x = inputs_embeds if inputs_embeds is not None else self.embed_tokens(input_ids)
-        x = G.rms(x, self.embed_norm, c.rms_norm_eps)
+        x = G.embedding_rms(x, self.embed_norm, c.rms_norm_eps)
         tau = R.log_tau(positions, c.log_scale_floor, c.log_scale_alpha).float()
         blocks: list = []
+        aux = []
+        visit_index = 0
 
         def visit(layer, pass_index, x, blocks, messages=None):
+            nonlocal visit_index
+            if visit_index in self.aux_hidden_state_layers:
+                aux.append(x.to(self.model_dtype))
+            visit_index += 1
             s = c.slot(layer, pass_index)
             return self.layers[layer](x, blocks, positions, tau, self.slots[s].attn, self.slots[s].conv, messages,
                                       pass_index)
@@ -210,10 +257,13 @@ class InklingModel(nn.Module):
         for il in range(c.loop_end, c.num_hidden_layers):
             x = visit(il, 0, x, blocks)
         h = G.mix(blocks, x, self.output_res_query)[:, 0]
-        return G.rms(h, self.norm, c.rms_norm_eps, self.model_dtype)
+        hidden = G.attention_rms(h, self.norm, c.rms_norm_eps, self.model_dtype)
+        if c.num_slots in self.aux_hidden_state_layers:
+            aux.append(hidden)
+        return (hidden, aux) if aux else hidden
 
 
-class Inkling2LoopForCausalLM(nn.Module, HasInnerState, IsHybrid):
+class Inkling2LoopForCausalLM(nn.Module, HasInnerState, IsHybrid, SupportsEagle3):
     def __init__(self, *, vllm_config: VllmConfig, prefix: str = ""):
         super().__init__()
         c = vllm_config.model_config.hf_text_config
@@ -234,6 +284,11 @@ class Inkling2LoopForCausalLM(nn.Module, HasInnerState, IsHybrid):
                 continue
 
     # hybrid cache planning: one short-conv state per layer visit
+    def set_aux_hidden_state_layers(self, layers: tuple[int, ...]) -> None:
+        if any(i < 0 or i > self.config.num_slots for i in layers):
+            raise ValueError("Inkling drafter tap is outside the unrolled target")
+        self.model._set_aux_hidden_state_layers(layers)
+
     @classmethod
     def get_mamba_state_dtype_from_config(cls, vllm_config: VllmConfig):
         from vllm.model_executor.layers.mamba.mamba_utils import MambaStateDtypeCalculator
@@ -245,7 +300,8 @@ class Inkling2LoopForCausalLM(nn.Module, HasInnerState, IsHybrid):
         from vllm.model_executor.layers.mamba.mamba_utils import MambaStateShapeCalculator
         c = vllm_config.model_config.hf_text_config
         return MambaStateShapeCalculator.short_conv_state_shape(tp_world_size=1, intermediate_size=c.conv_channels,
-                                                               conv_kernel=c.conv_L_cache)
+                                                               conv_kernel=c.conv_L_cache,
+                                                               num_spec=vllm_config.num_speculative_tokens)
 
     @classmethod
     def get_mamba_state_copy_func(cls):

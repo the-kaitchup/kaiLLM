@@ -1,1 +1,668 @@
-[]
+[
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "checkpoint": "inkling-udq2",
+    "engine": "llama.cpp",
+    "mode": "dspark5",
+    "batch": 4,
+    "llama_source": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6",
+    "llama_policy": "default",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "reason": "The 9,248 MiB GPU KV allocation and at least 8,469 MiB of resident model weights exceed the 16,303 MiB device capacity.",
+    "observation_only": false,
+    "llama_kv_allocation": {
+      "requested_bytes": 9697230848,
+      "resident_min_bytes": 8880720445,
+      "total_mib": 16303,
+      "inventory_sha256": "e8d5fd1a52cb2dd8e31505f3bb9d4d5f3289af9c9edda2b8f6c41ef4f25e4b75",
+      "driver": "595.99.02",
+      "power_limit_w": "300.00",
+      "context_per_slot": 73734,
+      "executable_sha256": "fc6f3bda378be8d3fa00f3d4d53666f5b8fabc12c5661fc48adb1dfe65c0aae3",
+      "download_receipts": {
+        "inkling-udq2": "e5b5d27032496db71a018fa9400af8e8a82898bcd11a4d8442b8952d05affcaa",
+        "dspark": "f200871e42e94a1a31846f84f8b7fb83afcf2b7d162662ef64b27a5d62fb2036"
+      },
+      "evidence": [
+        {
+          "microbatch": 512,
+          "log": "25a1aa56a3deb5d270c1f7362c483b61a470be056aa4a2668fe07efc09a1b562",
+          "receipt": "607d7a01bbcabbfaa6b0408a8da931de73231df45334953df9582463dc15c10d"
+        },
+        {
+          "microbatch": 64,
+          "log": "bb90b4131146247ebb524b465a9796fd8d7040817545a02f221694e50e01901a",
+          "receipt": "8364d91a8291bbed880925ef4e20c02d6864dca9ebeb1ee2108f9e2ea70bce47"
+        },
+        {
+          "microbatch": 64,
+          "log": "f42fd1433308d9c1b732d747d162299edbf1baea60501918511a7e7b60b32f31",
+          "receipt": "84f0a55027537eb849e9d966a7ea99ee4ed60e25065d645be9488c60ee717d94"
+        }
+      ]
+    }
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "checkpoint": "inkling-udq2",
+    "engine": "llama.cpp",
+    "mode": "dspark5",
+    "batch": 8,
+    "llama_source": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6",
+    "llama_policy": "default",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "reason": "The 18,496 MiB GPU KV allocation exceeds the 16,303 MiB device capacity.",
+    "observation_only": false,
+    "llama_kv_allocation": {
+      "requested_bytes": 19394461696,
+      "resident_min_bytes": 0,
+      "total_mib": 16303,
+      "inventory_sha256": "e8d5fd1a52cb2dd8e31505f3bb9d4d5f3289af9c9edda2b8f6c41ef4f25e4b75",
+      "driver": "595.99.02",
+      "power_limit_w": "300.00",
+      "context_per_slot": 73734,
+      "executable_sha256": "fc6f3bda378be8d3fa00f3d4d53666f5b8fabc12c5661fc48adb1dfe65c0aae3",
+      "download_receipts": {
+        "inkling-udq2": "e5b5d27032496db71a018fa9400af8e8a82898bcd11a4d8442b8952d05affcaa",
+        "dspark": "f200871e42e94a1a31846f84f8b7fb83afcf2b7d162662ef64b27a5d62fb2036"
+      },
+      "evidence": [
+        {
+          "microbatch": 512,
+          "log": "c30bd30955a78810a0047d7f55787f90586f071d6ff3058da61d6fc9ff1ec565",
+          "receipt": "9a86ce81aae20f048e504957b323461795202ed4b4fd7aaff540d9e841c01fb5"
+        },
+        {
+          "microbatch": 64,
+          "log": "924419ee0a2a7e2253afe65de3d5ed3a692e53c3c7aeaef9113d750a903477d5",
+          "receipt": "fb8879a46e692ea7dc4fd2c09a1f02eed50bf1d150e1c1b86d19bb839a93d2dd"
+        }
+      ]
+    }
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "checkpoint": "inkling-udq2",
+    "engine": "llama.cpp",
+    "mode": "dspark5",
+    "batch": 16,
+    "llama_source": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6",
+    "llama_policy": "default",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "reason": "The 36,992 MiB GPU KV allocation exceeds the 16,303 MiB device capacity.",
+    "observation_only": false,
+    "llama_kv_allocation": {
+      "requested_bytes": 38788923392,
+      "resident_min_bytes": 0,
+      "total_mib": 16303,
+      "inventory_sha256": "e8d5fd1a52cb2dd8e31505f3bb9d4d5f3289af9c9edda2b8f6c41ef4f25e4b75",
+      "driver": "595.99.02",
+      "power_limit_w": "300.00",
+      "context_per_slot": 73734,
+      "executable_sha256": "fc6f3bda378be8d3fa00f3d4d53666f5b8fabc12c5661fc48adb1dfe65c0aae3",
+      "download_receipts": {
+        "inkling-udq2": "e5b5d27032496db71a018fa9400af8e8a82898bcd11a4d8442b8952d05affcaa",
+        "dspark": "f200871e42e94a1a31846f84f8b7fb83afcf2b7d162662ef64b27a5d62fb2036"
+      },
+      "evidence": [
+        {
+          "microbatch": 512,
+          "log": "0762d8e36762f5cf979f3f59d2d02bbcbff0847bd91d5225916b4db8b5fca771",
+          "receipt": "3e322d24f3d38f27763ea57e422a09a0bc3c3158fd6e2c9e0e614d60be8dbc38"
+        },
+        {
+          "microbatch": 64,
+          "log": "70edf781be85496edac2a1aa05895b78f34ce6cfbab03ac4238079fd50a64b83",
+          "receipt": "6e10f2680fc35a5549de64e827b609688c326f0ba5a40544601666c268ebd9b9"
+        }
+      ]
+    }
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "checkpoint": "inkling-udq2",
+    "engine": "llama.cpp",
+    "mode": "dspark5",
+    "batch": 32,
+    "llama_source": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6",
+    "llama_policy": "default",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "reason": "The 73,984 MiB GPU KV allocation exceeds the 16,303 MiB device capacity.",
+    "observation_only": false,
+    "llama_kv_allocation": {
+      "requested_bytes": 77577846784,
+      "resident_min_bytes": 0,
+      "total_mib": 16303,
+      "inventory_sha256": "e8d5fd1a52cb2dd8e31505f3bb9d4d5f3289af9c9edda2b8f6c41ef4f25e4b75",
+      "driver": "595.99.02",
+      "power_limit_w": "300.00",
+      "context_per_slot": 73734,
+      "executable_sha256": "fc6f3bda378be8d3fa00f3d4d53666f5b8fabc12c5661fc48adb1dfe65c0aae3",
+      "download_receipts": {
+        "inkling-udq2": "e5b5d27032496db71a018fa9400af8e8a82898bcd11a4d8442b8952d05affcaa",
+        "dspark": "f200871e42e94a1a31846f84f8b7fb83afcf2b7d162662ef64b27a5d62fb2036"
+      },
+      "evidence": [
+        {
+          "microbatch": 512,
+          "log": "f3a2fa9c9077a93d6970bbdeecad90963bc50487be124b3cf4342a9248d99e03",
+          "receipt": "52500c06aa9aaca9aef400869cf9a2251515905d66b1eec4275c42daa2e69657"
+        },
+        {
+          "microbatch": 64,
+          "log": "a5aa27629ee0b00bb25834606298f242c2b58bec9fb3736c6467e09c481e033f",
+          "receipt": "e629e9ac29356912d691512b9fdff3075a7287ed212dd0d1ae00bc2bcd508abc"
+        }
+      ]
+    }
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "checkpoint": "inkling-udq2",
+    "engine": "llama.cpp",
+    "mode": "plain",
+    "batch": 1,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "llama_source": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "checkpoint": "inkling-udq2",
+    "engine": "llama.cpp",
+    "mode": "plain",
+    "batch": 4,
+    "llama_source": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6",
+    "llama_policy": "default",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "reason": "The 9,216 MiB GPU KV allocation and at least 8,469 MiB of resident model weights exceed the 16,303 MiB device capacity.",
+    "observation_only": false,
+    "llama_kv_allocation": {
+      "requested_bytes": 9663676416,
+      "resident_min_bytes": 8880720445,
+      "total_mib": 16303,
+      "inventory_sha256": "e8d5fd1a52cb2dd8e31505f3bb9d4d5f3289af9c9edda2b8f6c41ef4f25e4b75",
+      "driver": "595.99.02",
+      "power_limit_w": "300.00",
+      "context_per_slot": 73728,
+      "executable_sha256": "fc6f3bda378be8d3fa00f3d4d53666f5b8fabc12c5661fc48adb1dfe65c0aae3",
+      "download_receipts": {
+        "inkling-udq2": "e5b5d27032496db71a018fa9400af8e8a82898bcd11a4d8442b8952d05affcaa"
+      },
+      "evidence": [
+        {
+          "microbatch": 512,
+          "log": "8d86b4c4223a4d81ae2925c77de734f7b033a3f797073e8727d589c1026b8e38",
+          "receipt": "4c272f853316a4fa98def99d56c3b7bfa6e2e4e7aaccf06fcebbd019931e2b1e"
+        },
+        {
+          "microbatch": 64,
+          "log": "8f48e65b0755628681a4e56d8d3eeb06451d4a0319495429d68e408794dc8d2c",
+          "receipt": "629702624034c7c87057fd2fe0e0cae46b154414e42df5d84fa3b5ab84963eac"
+        },
+        {
+          "microbatch": 64,
+          "log": "973f583d2569cafb57d0560934715d0ffa0f77997f25d5622aa0221e41ff2b2c",
+          "receipt": "7f8049c02c75b9c466be8be42f6f91bb5045cdc0076a91b3636e7c9a0be7dcdb"
+        }
+      ]
+    }
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "checkpoint": "inkling-udq2",
+    "engine": "llama.cpp",
+    "mode": "plain",
+    "batch": 8,
+    "llama_source": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6",
+    "llama_policy": "default",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "reason": "The 18,432 MiB GPU KV allocation exceeds the 16,303 MiB device capacity.",
+    "observation_only": false,
+    "llama_kv_allocation": {
+      "requested_bytes": 19327352832,
+      "resident_min_bytes": 0,
+      "total_mib": 16303,
+      "inventory_sha256": "e8d5fd1a52cb2dd8e31505f3bb9d4d5f3289af9c9edda2b8f6c41ef4f25e4b75",
+      "driver": "595.99.02",
+      "power_limit_w": "300.00",
+      "context_per_slot": 73728,
+      "executable_sha256": "fc6f3bda378be8d3fa00f3d4d53666f5b8fabc12c5661fc48adb1dfe65c0aae3",
+      "download_receipts": {
+        "inkling-udq2": "e5b5d27032496db71a018fa9400af8e8a82898bcd11a4d8442b8952d05affcaa"
+      },
+      "evidence": [
+        {
+          "microbatch": 512,
+          "log": "6e6b1a1df5a55fac5e1f138945f024689a27c491447b0ff69ee6cc27c1ae3045",
+          "receipt": "2d322778420402c612c126d89151ae8795ca47e117385e2e5dbaa5e907215885"
+        },
+        {
+          "microbatch": 64,
+          "log": "dbee77f65f06d8d3e21cb310a0bbac81ace9afd5a38082333b47d8939fc09f7c",
+          "receipt": "93848d1d8a0a293bf6825d1a579319a3962c09ea8d147d00a1d00502b48ada3d"
+        }
+      ]
+    }
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "checkpoint": "inkling-udq2",
+    "engine": "llama.cpp",
+    "mode": "plain",
+    "batch": 16,
+    "llama_source": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6",
+    "llama_policy": "default",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "reason": "The 36,864 MiB GPU KV allocation exceeds the 16,303 MiB device capacity.",
+    "observation_only": false,
+    "llama_kv_allocation": {
+      "requested_bytes": 38654705664,
+      "resident_min_bytes": 0,
+      "total_mib": 16303,
+      "inventory_sha256": "e8d5fd1a52cb2dd8e31505f3bb9d4d5f3289af9c9edda2b8f6c41ef4f25e4b75",
+      "driver": "595.99.02",
+      "power_limit_w": "300.00",
+      "context_per_slot": 73728,
+      "executable_sha256": "fc6f3bda378be8d3fa00f3d4d53666f5b8fabc12c5661fc48adb1dfe65c0aae3",
+      "download_receipts": {
+        "inkling-udq2": "e5b5d27032496db71a018fa9400af8e8a82898bcd11a4d8442b8952d05affcaa"
+      },
+      "evidence": [
+        {
+          "microbatch": 512,
+          "log": "63aeb537b552fda24cf2bed8e5a9b9573c6eb04b79531c48b888cdd6c989eb69",
+          "receipt": "aa1988584c39b8c9dfc22a53d9f5c0966c4afddce4bc20c82fccaaa148f0f62c"
+        },
+        {
+          "microbatch": 64,
+          "log": "33a345634310392fb5c0ae603734f29575492a48d126498cc0b97d8bc031af3e",
+          "receipt": "7eadbc123f213f986b4de0a20eefeadcb69fc09c8cef163059ad7ab612a85896"
+        }
+      ]
+    }
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5070 Ti"
+    ],
+    "hardware_id": "0cfb394c31dc861a",
+    "checkpoint": "inkling-udq2",
+    "engine": "llama.cpp",
+    "mode": "plain",
+    "batch": 32,
+    "llama_source": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6",
+    "llama_policy": "default",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "reason": "The 73,728 MiB GPU KV allocation exceeds the 16,303 MiB device capacity.",
+    "observation_only": false,
+    "llama_kv_allocation": {
+      "requested_bytes": 77309411328,
+      "resident_min_bytes": 0,
+      "total_mib": 16303,
+      "inventory_sha256": "e8d5fd1a52cb2dd8e31505f3bb9d4d5f3289af9c9edda2b8f6c41ef4f25e4b75",
+      "driver": "595.99.02",
+      "power_limit_w": "300.00",
+      "context_per_slot": 73728,
+      "executable_sha256": "fc6f3bda378be8d3fa00f3d4d53666f5b8fabc12c5661fc48adb1dfe65c0aae3",
+      "download_receipts": {
+        "inkling-udq2": "e5b5d27032496db71a018fa9400af8e8a82898bcd11a4d8442b8952d05affcaa"
+      },
+      "evidence": [
+        {
+          "microbatch": 512,
+          "log": "7ea7341c9a1fec7eab541e173047c9be7993a8dce10b295bfba93827b3d82949",
+          "receipt": "df6c5b03030bc2e8d6640f9d914c80c2593a0f977d77355a592f79df686bdc41"
+        },
+        {
+          "microbatch": 64,
+          "log": "54c8aa1cab63d079ed89e77b55e5acaf7ccb4fd513bf3795949fe4a35f285b41",
+          "receipt": "d1c1b5d587b30d70e1ce2c8e8f210cbfbc905fc5357f889817d1bb09fcbfd50d"
+        }
+      ]
+    }
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "daisy-dondon",
+    "engine": "kaiLLM",
+    "mode": "plain",
+    "batch": 1,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "3592e073925dbdbc65a340fca851fc01b8d2c409"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "daisy-dondon",
+    "engine": "llama.cpp",
+    "mode": "mtp5",
+    "batch": 1,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "3592e073925dbdbc65a340fca851fc01b8d2c409"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "daisy-dondon",
+    "engine": "llama.cpp",
+    "mode": "mtp5",
+    "batch": 2,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "3592e073925dbdbc65a340fca851fc01b8d2c409"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "daisy-dondon",
+    "engine": "llama.cpp",
+    "mode": "plain",
+    "batch": 2,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "3592e073925dbdbc65a340fca851fc01b8d2c409"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "daisy-iq2m",
+    "engine": "llama.cpp",
+    "mode": "mtp5",
+    "batch": 1,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "4514fec3c6573951bce8acc7f850d9eb496301c7"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "daisy-iq2m",
+    "engine": "llama.cpp",
+    "mode": "mtp5",
+    "batch": 2,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "4514fec3c6573951bce8acc7f850d9eb496301c7"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "daisy-iq2m",
+    "engine": "llama.cpp",
+    "mode": "plain",
+    "batch": 2,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "4514fec3c6573951bce8acc7f850d9eb496301c7"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "daisy-rco",
+    "engine": "kaiLLM",
+    "mode": "dspine15",
+    "batch": 1,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "6c1a63358c57f5baf2730574ba418195eb7edfa8"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "daisy-rco",
+    "engine": "kaiLLM",
+    "mode": "dspine7",
+    "batch": 1,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "6c1a63358c57f5baf2730574ba418195eb7edfa8"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "daisy-rco",
+    "engine": "kaiLLM",
+    "mode": "plain",
+    "batch": 1,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "6c1a63358c57f5baf2730574ba418195eb7edfa8"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "inkling-udq2",
+    "engine": "kaiLLM",
+    "mode": "plain",
+    "batch": 2,
+    "reason": "Memory allocation failed at the requested context",
+    "kai_source": "1eb7e39b2cb30984e10b21ecad376edd5ca763fa",
+    "model_revision": "45fd08764f2b0bf16b03a5483a80e5c7aaec8772"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "hardware_id": "5b27be431fd09c1d",
+    "checkpoint": "inkling-udq2",
+    "engine": "llama.cpp",
+    "mode": "dspark5",
+    "batch": 2,
+    "llama_source": "e4b1cb5318f1ac55d148be228c6347c6a94cc4c6",
+    "llama_policy": "default",
+    "model_revision": "8078d149286eec7193795413b9e0643da6d11fa1",
+    "sha256": [
+      "b42841608ea380ddde5a3f1125081357128a3c71b80d006246de4e31292fc6c1"
+    ],
+    "observation_only": true,
+    "llama_draft_admission": {
+      "context_per_slot": 73734,
+      "total_mib": 16303,
+      "driver": "580.159.03",
+      "power_limit_w": "360.00",
+      "inventory_sha256": "7f93e1b6d633a56713fbdbbb2221e2634f74f644fb4be562451f5dda00b8e95c",
+      "receipt_sha256": "9d634eac45eb0d55a5c1e73215eb33161211a355a6b1ae57aa24d22f05d7874f",
+      "witnesses": [
+        {
+          "microbatch": 512,
+          "stage": "target compute",
+          "requested_bytes": 7697668352,
+          "log_sha256": "e0ddfe86434e02614289b5fcd647666c19e6d3ac4ea9a1cde394a11cb25c2000"
+        },
+        {
+          "microbatch": 256,
+          "stage": "target compute",
+          "requested_bytes": 3848548608,
+          "log_sha256": "fc183fa29af4a931fcd580384efbf340f89cb84c54c13904a5350729d783672f"
+        },
+        {
+          "microbatch": 128,
+          "stage": "draft weights",
+          "requested_bytes": 491900288,
+          "log_sha256": "80086d3dc9d21237ece9b2233605a68af96c1e08f14ffcb884d5de90976b2359"
+        },
+        {
+          "microbatch": 64,
+          "stage": "draft KV",
+          "requested_bytes": 606076928,
+          "log_sha256": "72d01bcf9d3ba548b14b37ce1e852dc5ea30a873d19d7a94a4cd5bfa53cd2358"
+        }
+      ],
+      "executable_sha256": "86cbd9e02b04b0fcc05ab6344838a27583d5a41c06642fe43fd5586ebc6102e4",
+      "download_receipts": {
+        "inkling-udq2": "e5b5d27032496db71a018fa9400af8e8a82898bcd11a4d8442b8952d05affcaa",
+        "dspark": "2718d4b7b239a9bcd421e39815428481bccfc9c2d933381463129920e3a2b5a5"
+      }
+    },
+    "reason": "On the tested 16,303 MiB board, allocation failed for target compute at ub512/256, draft weights at ub128, draft KV at ub64."
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "lfm-qad",
+    "engine": "llama.cpp",
+    "mode": "plain",
+    "batch": 32,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "cd0c74c575b5c416f3011b5b4c298077f26ca8c2"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "lfm-suisui",
+    "engine": "llama.cpp",
+    "mode": "plain",
+    "batch": 16,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "6fcfa6348c8399bd436b7ccd8a0c5e6c9dfe765b"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "qwen-chima",
+    "engine": "kaiLLM",
+    "mode": "dspine15",
+    "batch": 1,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "aa5396581a0d09201312c0262dcfa2d0e1871eba"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "qwen-chima",
+    "engine": "kaiLLM",
+    "mode": "dspine7",
+    "batch": 1,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "aa5396581a0d09201312c0262dcfa2d0e1871eba"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "qwen-chima",
+    "engine": "kaiLLM",
+    "mode": "plain",
+    "batch": 2,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "aa5396581a0d09201312c0262dcfa2d0e1871eba"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "qwen-chima",
+    "engine": "kaiLLM",
+    "mode": "plain",
+    "batch": 4,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "aa5396581a0d09201312c0262dcfa2d0e1871eba"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "qwen-udq2",
+    "engine": "kaiLLM",
+    "mode": "plain",
+    "batch": 1,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "4af51b3542f775b0a8e4b310bfb3f17e01c306c9"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "qwen-udq2",
+    "engine": "llama.cpp",
+    "mode": "mtp5",
+    "batch": 2,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "4af51b3542f775b0a8e4b310bfb3f17e01c306c9"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "qwen-udq2",
+    "engine": "llama.cpp",
+    "mode": "plain",
+    "batch": 2,
+    "reason": "Memory allocation failed at the requested context",
+    "model_revision": "4af51b3542f775b0a8e4b310bfb3f17e01c306c9"
+  },
+  {
+    "gpu": [
+      "NVIDIA GeForce RTX 5080",
+      "NVIDIA GeForce RTX 5080",
+      "NVIDIA GeForce RTX 5080",
+      "NVIDIA GeForce RTX 5080"
+    ],
+    "checkpoint": "hy4-dondon",
+    "engine": "llama.cpp",
+    "mode": "plain",
+    "batch": 1,
+    "reason": "One GPU failed to initialize CUDA before and after a container reboot.",
+    "model_revision": "ee58ad539c09c0b2b290a06f17c99e638a0db139",
+    "llama_source": "0a054d0b02454c998e068381d15f3f6615bdd987",
+    "llama_policy": "default",
+    "observation_only": true,
+    "hardware_id": "ccd5051d68f2b79f"
+  }
+]

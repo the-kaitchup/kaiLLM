@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""itq-moe (routed-expert ITQ, docs/inkling-itq-format.md): a synthetic GGUF with mixed per-expert formats goes through
+"""A synthetic routed-expert ITQ GGUF with mixed per-expert formats goes through
 the manifest reader, the component loader and the FP32 oracle; each expert must equal the dense itq oracle on its
 own byte range, and malformed descriptors must be refused.
 
