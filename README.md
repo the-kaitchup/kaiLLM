@@ -12,10 +12,10 @@ inference, and exposes an OpenAI-compatible API. [vLLM](https://github.com/vllm-
 
 ## Updates
 
-- **Unreleased · November 27, 2026.** Inkling DSpark and expert-kernel
+- **November 27, 2026 · Available on `main`.** Inkling DSpark and expert-kernel
   improvements on RTX 5090, RTX PRO 6000, and DGX Spark, plus LFM3 tool calling
   and separate reasoning output. The Linux x86-64 installer now uses the
-  serving code from `main`. [Release notes](docs/release-notes.md#unreleased)
+  serving code from `main`. [Release notes](docs/release-notes.md#november-27-2026)
 - **0.1.0rc6.** Added 3.5- and 4-bit ITQ tensors for LFM3 Chimachima v2.
   [Release notes](docs/release-notes.md#kaillm-010rc6)
 - **0.1.0rc5.** Added Qwen3.8 27B kaiPTQ support on RTX 3060 and DSpine
@@ -200,7 +200,7 @@ separately from final content in both streaming and complete responses. Read
 `include_reasoning=false` to omit thinking from the response. Disable automatic
 tool choice with `--no-enable-auto-tool-choice`. For custom templates, select
 matching parsers via `--tool-call-parser` and `--reasoning-parser`.
-[Release notes](docs/release-notes.md#unreleased)
+[Release notes](docs/release-notes.md#november-27-2026)
 
 ## License and acknowledgments
 

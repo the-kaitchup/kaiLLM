@@ -1,4 +1,4 @@
-# Unreleased
+# November 27, 2026
 
 - Linux x86-64 installs from a source checkout use its serving code with a
   checksum-verified binary and dependency base.
