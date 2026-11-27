@@ -216,7 +216,7 @@
     "vllm_gguf_plugin/csrc/gguf/mmvq.cuh": "f46667f8c09a7ca8b90fd4b7c89a5eca54cca99372762c3c2853870874d6e829",
     "vllm_gguf_plugin/csrc/gguf/moe.cuh": "9e7510e259ed6a4ce9ff18743628b16a9a10f1fcac44553c450bee1684f6bf25",
     "vllm_gguf_plugin/csrc/gguf/moe_vec.cuh": "dbe05b1a3515ebf3b2f3d07264f742566eb9f01bef769f46b2f90442a18633da",
-    "vllm_gguf_plugin/csrc/gguf/vecdotq.cuh": "4972eddb514db4a12a996e667905a86fe8ce0f0f42e9839dd2db75774ad5d326",
+    "vllm_gguf_plugin/csrc/gguf/vecdotq.cuh": "fd14cf711557510aebbe1d4ee7a9cc192cafcde02c80a2d46edd286d1e8fa0fe",
     "vllm_gguf_plugin/native/__init__.py": "c0cdb19d45ba250c00025c5ebc48a6f59b3e9be1337b641c4326270a2f8ea6fe",
     "vllm_gguf_plugin/native/completion_batch.py": "4c54a8c61a731671cdcd36caac4a7ed86ce3b73367bc8fd5549369783f8fbb7c",
     "vllm_gguf_plugin/native/conditional_graph.py": "d92f64deb60bb792bbc83c6fc008bffa0628be225cf139185fa85ded3efa5422",
