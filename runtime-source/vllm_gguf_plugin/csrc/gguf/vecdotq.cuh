@@ -1528,6 +1528,21 @@ static __device__ __forceinline__ float vec_dot_q6_K_q8_1_mul_mat(
     return vec_dot_q6_K_q8_1_impl_mmq(&x_ql[index_x], &y_qs[index_y], sc, x_dmf[i * (WARP_SIZE_GGUF/QI6_K) + i/QI6_K], &y_df[index_y/QI8_1]);
 }
 
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 610
+// The IQ2 XS/XXS codebook values (8, 25, 43) fit in signed bytes after sign application.
+static __device__ __forceinline__ int iq2_dot8(uint64_t grid, uint8_t signs, const int8_t * q8, int sum) {
+    static_assert(alignof(block_q8_1) >= 4 && offsetof(block_q8_1, qs) % 4 == 0);
+    // Spread each sign bit to bit 0 of its own byte.
+    const uint32_t lo = (((signs & 0xfu) * 0x10204080u) >> 7) & 0x01010101u;
+    const uint32_t hi = (((signs >> 4) * 0x10204080u) >> 7) & 0x01010101u;
+    // The codebook has no zero byte, so +1 after byte-wise NOT never carries.
+    const uint32_t signed_lo = ((uint32_t)grid ^ (lo * 0xffu)) + lo;
+    const uint32_t signed_hi = ((uint32_t)(grid >> 32) ^ (hi * 0xffu)) + hi;
+    sum = __dp4a((int)signed_lo, get_int_from_int8_aligned(q8, 0), sum);
+    return __dp4a((int)signed_hi, get_int_from_int8_aligned(q8, 1), sum);
+}
+#endif
+
 static __device__ __forceinline__ float vec_dot_iq2_xxs_q8_1(
     const void * __restrict__ vbq, const block_q8_1 * __restrict__ bq8_1, const int & iqs) {
     const block_iq2_xxs * bq2 = (const block_iq2_xxs *) vbq;
@@ -1539,11 +1554,15 @@ static __device__ __forceinline__ float vec_dot_iq2_xxs_q8_1(
     uint32_t aux32 = q2[2] | (q2[3] << 16);
     int sumi = 0;
     for (int l = 0; l < 4; ++l) {
-        const uint8_t * grid = (const uint8_t *)(iq2xxs_grid + aux8[l]);
         const uint8_t  signs = ksigns_iq2xs[aux32 & 127];
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 610
+        sumi = iq2_dot8(iq2xxs_grid[aux8[l]], signs, q8, sumi);
+#else
+        const uint8_t * grid = (const uint8_t *)(iq2xxs_grid + aux8[l]);
         for (int j = 0; j < 8; ++j) {
             sumi += q8[j] * grid[j] * (signs & kmask_iq2xs[j] ? -1 : 1);
         }
+#endif
         q8 += 8;
         aux32 >>= 7;
     }
@@ -1562,20 +1581,28 @@ static __device__ __forceinline__ float vec_dot_iq2_xs_q8_1(
     const uint8_t ls2 = bq2->scales[ib32] >>  4;
     int sumi1 = 0;
     for (int l = 0; l < 2; ++l) {
-        const uint8_t * grid = (const uint8_t *)(iq2xs_grid + (q2[l] & 511));
         const uint8_t  signs = ksigns_iq2xs[q2[l] >> 9];
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 610
+        sumi1 = iq2_dot8(iq2xs_grid[(q2[l] & 511)], signs, q8, sumi1);
+#else
+        const uint8_t * grid = (const uint8_t *)(iq2xs_grid + (q2[l] & 511));
         for (int j = 0; j < 8; ++j) {
             sumi1 += q8[j] * grid[j] * (signs & kmask_iq2xs[j] ? -1 : 1);
         }
+#endif
         q8 += 8;
     }
     int sumi2 = 0;
     for (int l = 2; l < 4; ++l) {
-        const uint8_t * grid = (const uint8_t *)(iq2xs_grid + (q2[l] & 511));
         const uint8_t  signs = ksigns_iq2xs[q2[l] >> 9];
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 610
+        sumi2 = iq2_dot8(iq2xs_grid[(q2[l] & 511)], signs, q8, sumi2);
+#else
+        const uint8_t * grid = (const uint8_t *)(iq2xs_grid + (q2[l] & 511));
         for (int j = 0; j < 8; ++j) {
             sumi2 += q8[j] * grid[j] * (signs & kmask_iq2xs[j] ? -1 : 1);
         }
+#endif
         q8 += 8;
     }
     const float d = __half2float(bq2->d) * __half2float(bq8_1[ib32].ds.x) * 0.25f;
